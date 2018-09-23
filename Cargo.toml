@@ -1,0 +1,18 @@
+[package]
+name = "rust-backend"
+version = "0.1.0"
+authors = ["jslupicki <jan@slupicki.com>"]
+
+[dependencies]
+log = "*"
+log4rs = "*"
+actix-web = "*"
+serde = "*"
+serde_json = "*"
+serde_derive = "*"
+diesel = { version = "*", features = ["sqlite"] }
+diesel_migrations = "*"
+dotenv = "*"
+r2d2 = "*"
+r2d2-diesel = "*"
+lazy_static = "*"

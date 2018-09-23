@@ -1,0 +1,6 @@
+target
+Cargo.lock
+*.sqlite3
+rust-backend.iws
+rust-backend.ipr
+rust-backend.iml
