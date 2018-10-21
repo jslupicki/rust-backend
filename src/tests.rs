@@ -1,5 +1,6 @@
 use super::*;
 use std::fs::remove_file;
+use users_dao::*;
 
 static TEST_DB_NAME: &str = "test_db.sqlite3";
 
@@ -66,4 +67,17 @@ fn crud_operations_on_user() {
         .execute(conn)
         .unwrap();
     assert_user_count(0, conn);
+}
+
+#[test]
+fn check_insert_default_users() {
+    // Initialize
+    let _ = log4rs::init_file("log4rs.yml", Default::default());
+    let conn = &initialize_db();
+
+    // Check if DB is empty
+    assert_user_count(0, conn);
+
+    insert_default_users(conn);
+    assert_user_count(2, conn);    
 }

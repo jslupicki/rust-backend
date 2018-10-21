@@ -31,8 +31,8 @@ mod users_dao;
 #[cfg(test)]
 mod tests;
 
-use self::models::{NewUser, User};
-use self::schema::users;
+use models::{NewUser, User};
+use schema::users;
 use diesel::dsl::*;
 use diesel::insert_into;
 use users::dsl::*;
