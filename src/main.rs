@@ -1,3 +1,6 @@
+// TODO: remove when Diesel fix https://github.com/diesel-rs/diesel/issues/1785
+#![allow(proc_macro_derive_resolution_fallback)]
+
 #[macro_use]
 extern crate log;
 extern crate actix_web;
@@ -23,6 +26,8 @@ use actix_web::{server, App, HttpRequest};
 
 pub mod models;
 pub mod schema;
+mod users_dao;
+
 #[cfg(test)]
 mod tests;
 
