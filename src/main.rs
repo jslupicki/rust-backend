@@ -32,10 +32,10 @@ mod users_dao;
 #[cfg(test)]
 mod tests;
 
-use models::{NewUser, User};
-use schema::users;
 use diesel::dsl::*;
 use diesel::insert_into;
+use models::{NewUser, User};
+use schema::users;
 use users::dsl::*;
 
 lazy_static! {
@@ -74,4 +74,3 @@ fn main() {
         .unwrap()
         .run();
 }
-

@@ -1,28 +1,30 @@
+use diesel::dsl::*;
+use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use models::{NewUser, User};
-use diesel::dsl::*;
+use sha3::{Digest, Sha3_256};
 use users::dsl::*;
-use diesel::prelude::*;
-use sha3::{Sha3_256, Digest};
 
 pub fn insert_default_users(conn: &SqliteConnection) {
     let default_users = vec![
         NewUser {
-                username: "admin".to_string(),
-                password: "admin".to_string(),
-                is_admin: true,
+            username: "admin".to_string(),
+            password: "admin".to_string(),
+            is_admin: true,
         },
         NewUser {
-                username: "user".to_string(),
-                password: "user".to_string(),
-                is_admin: false,
+            username: "user".to_string(),
+            password: "user".to_string(),
+            is_admin: false,
         },
     ];
     for user in &default_users {
-        if let Ok(is_admin_exist) = select(exists(users.filter(username.eq(&user.username)))).get_result::<bool>(conn) {
+        if let Ok(is_admin_exist) =
+            select(exists(users.filter(username.eq(&user.username)))).get_result::<bool>(conn)
+        {
             if !is_admin_exist {
                 let new_user = create_user(&user, conn);
-                assert_eq!(new_user, Ok(1), "Adding 'admin' user FAILED");
+                assert_eq!(new_user, Ok(1), "Adding '{}' user FAILED", &user.username);
             }
         }
     }

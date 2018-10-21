@@ -79,7 +79,7 @@ fn check_insert_default_users() {
     assert_user_count(0, conn);
 
     insert_default_users(conn);
-    assert_user_count(2, conn);    
+    assert_user_count(2, conn);
 }
 
 #[test]
@@ -88,5 +88,8 @@ fn check_hash() {
     let text = String::from("text");
     let hash = hash(&text);
     info!("hash of '{}': {}", text, hash);
-    assert_eq!(hash, "987b43dbd4b9c71bdc9f6262a80fdde5e5b6e095acadfbabfe4cafc8f34b419a");
+    assert_eq!(
+        hash,
+        "987b43dbd4b9c71bdc9f6262a80fdde5e5b6e095acadfbabfe4cafc8f34b419a"
+    );
 }
