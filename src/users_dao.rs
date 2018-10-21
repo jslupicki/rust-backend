@@ -3,6 +3,7 @@ use models::{NewUser, User};
 use diesel::dsl::*;
 use users::dsl::*;
 use diesel::prelude::*;
+use sha3::{Sha3_256, Digest};
 
 pub fn insert_default_users(conn: &SqliteConnection) {
     let default_users = vec![
@@ -29,4 +30,10 @@ pub fn insert_default_users(conn: &SqliteConnection) {
 
 pub fn create_user(new_user: &NewUser, conn: &SqliteConnection) -> QueryResult<usize> {
     insert_into(users).values(new_user).execute(conn)
+}
+
+pub fn hash(text: &String) -> String {
+    let mut h = Sha3_256::default();
+    h.input(text.as_bytes());
+    format!("{:x}", h.result())
 }
