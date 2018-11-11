@@ -3,7 +3,7 @@ use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use models::{NewUser, User};
 use sha3::{Digest, Sha3_256};
-use users::dsl::*;
+use schema::users::dsl::*;
 
 pub fn insert_default_users(conn: &SqliteConnection) {
     let default_users = vec![

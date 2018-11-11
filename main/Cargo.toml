@@ -1,0 +1,10 @@
+[package]
+name = "main"
+version = "0.1.0"
+authors = ["jslupicki <jan@slupicki.com>"]
+
+[dependencies]
+dao = { path = "../dao" }
+log = "*"
+log4rs = "*"
+actix-web = "*"
