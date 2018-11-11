@@ -1,3 +1,6 @@
+// TODO: remove when Diesel fix https://github.com/diesel-rs/diesel/issues/1785
+#![allow(proc_macro_derive_resolution_fallback)]
+
 #[macro_use]
 extern crate log;
 extern crate log4rs;
