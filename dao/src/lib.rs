@@ -39,3 +39,7 @@ pub fn create_connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
         .build(manager)
         .expect("Failed to create pool.")
 }
+
+pub fn test() {
+    println!("Hello world");
+}

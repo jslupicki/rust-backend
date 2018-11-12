@@ -6,6 +6,7 @@ extern crate actix_web;
 extern crate log4rs;
 
 use actix_web::{server, App, HttpRequest};
+use dao::test;
 
 fn index(_req: &HttpRequest) -> &'static str {
     info!("Got request!");
@@ -13,6 +14,8 @@ fn index(_req: &HttpRequest) -> &'static str {
 }
 
 fn main() {
+    test();
+
     log4rs::init_file("log4rs.yml", Default::default()).unwrap();
     info!("Start application");
 
