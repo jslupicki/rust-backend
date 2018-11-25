@@ -14,6 +14,7 @@ extern crate dotenv;
 extern crate r2d2;
 extern crate r2d2_diesel;
 extern crate sha3;
+extern crate monitor;
 
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
