@@ -1,26 +1,16 @@
 extern crate dao;
-
 #[macro_use]
 extern crate log;
-extern crate actix_web;
 extern crate log4rs;
+extern crate rest;
 
-use actix_web::{server, App, HttpRequest};
 use dao::test;
-
-fn index(_req: &HttpRequest) -> &'static str {
-    info!("Got request!");
-    "Hello world!"
-}
+use rest::start;
 
 fn main() {
-    test();
-
     log4rs::init_file("log4rs.yml", Default::default()).unwrap();
     info!("Start application");
 
-    server::new(|| App::new().resource("/", |r| r.f(index)))
-        .bind("127.0.0.1:8088")
-        .unwrap()
-        .run();
+    test();
+    start();
 }

@@ -1,5 +1,6 @@
 [workspace]
 members = [
     "dao",
-    "main"
+    "rest",
+    "main",
 ]
