@@ -8,3 +8,6 @@ dao = { path = "../dao" }
 log = "*"
 log4rs = "*"
 actix-web = "*"
+serde = "*"
+serde_json = "*"
+serde_derive = "*"
