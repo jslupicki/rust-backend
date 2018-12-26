@@ -2,26 +2,29 @@
 #![allow(proc_macro_derive_resolution_fallback)]
 
 #[macro_use]
-extern crate log;
-extern crate log4rs;
-#[macro_use]
-extern crate lazy_static;
-#[macro_use]
 extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
 extern crate dotenv;
+#[macro_use]
+extern crate lazy_static;
+#[macro_use]
+extern crate log;
+extern crate log4rs;
+extern crate monitor;
 extern crate r2d2;
 extern crate r2d2_diesel;
 extern crate sha3;
-extern crate monitor;
+
+use std::env;
 
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use dotenv::dotenv;
 use r2d2::Pool;
 use r2d2_diesel::ConnectionManager;
-use std::env;
+
+use models::{NewUser, User};
 
 mod models;
 mod schema;
@@ -43,4 +46,9 @@ pub fn create_connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
 
 pub fn test() {
     println!("Hello world");
+}
+
+pub fn get_users() -> Vec<User> {
+    let conn = pool.get().unwrap();
+    users_dao::get_users(&conn)
 }

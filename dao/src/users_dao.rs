@@ -1,9 +1,10 @@
 use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
+use sha3::{Digest, Sha3_256};
+
 use models::{NewUser, User};
 use schema::users::dsl::*;
-use sha3::{Digest, Sha3_256};
 
 pub fn insert_default_users(conn: &SqliteConnection) {
     let default_users = vec![
@@ -20,7 +21,7 @@ pub fn insert_default_users(conn: &SqliteConnection) {
     ];
     for user in &default_users {
         if let Ok(is_admin_exist) =
-            select(exists(users.filter(username.eq(&user.username)))).get_result::<bool>(conn)
+        select(exists(users.filter(username.eq(&user.username)))).get_result::<bool>(conn)
         {
             if !is_admin_exist {
                 let new_user = create_user(&user, conn);
@@ -40,15 +41,21 @@ pub fn hash(text: &String) -> String {
     format!("{:x}", h.result())
 }
 
+pub fn get_users(conn: &SqliteConnection) -> Vec<User> {
+    users.load::<User>(conn).expect("Load users failed")
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use diesel;
-    use log4rs;
-    use monitor::Monitor;
     use std::fs::remove_file;
     use std::io::stdout;
     use std::sync::Arc;
+
+    use diesel;
+    use log4rs;
+    use monitor::Monitor;
+
+    use super::*;
 
     static TEST_DB_NAME: &str = "test_db.sqlite3";
 
@@ -148,5 +155,17 @@ mod tests {
             hash,
             "987b43dbd4b9c71bdc9f6262a80fdde5e5b6e095acadfbabfe4cafc8f34b419a"
         );
+    }
+
+    #[test]
+    fn check_get_users() {
+        MON.with_lock(|_| {
+            // Initialize
+            let _ = log4rs::init_file("log4rs.yml", Default::default());
+            let conn = &initialize_db();
+            insert_default_users(conn);
+            let all_users = get_users(conn);
+            assert_eq!(all_users.len(), 2)
+        })
     }
 }

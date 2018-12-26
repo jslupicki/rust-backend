@@ -11,8 +11,6 @@ extern crate serde_json;
 use actix_web::{App, Error, HttpRequest, HttpResponse, Responder, server};
 use actix_web::http::Method;
 
-use dao::test;
-
 #[derive(Serialize, Deserialize)]
 struct UserDTO {
     username: String
@@ -24,11 +22,18 @@ fn index(_req: &HttpRequest) -> &'static str {
 }
 
 fn get_users(_req: &HttpRequest) -> Result<HttpResponse, Error> {
+/*
     let users = vec![
         UserDTO { username: "Test1".to_string() },
         UserDTO { username: "Test2".to_string() },
         UserDTO { username: "Test3".to_string() },
     ];
+*/
+    let users: Vec<UserDTO> = dao::get_users()
+        .into_iter()
+        .map(|u| UserDTO { username: u.username})
+        .collect()
+        ;
     let body = serde_json::to_string(&users)?;
     Ok(HttpResponse::Ok()
         .content_type("application/json")
