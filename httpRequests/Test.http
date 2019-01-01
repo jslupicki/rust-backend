@@ -7,8 +7,8 @@
 
 GET http://localhost:8088/
 Accept: text/plain
+Cookie: a=1;b=3;c=4
 
-###
 ###
 
 GET http://localhost:8088/users

@@ -8,6 +8,8 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
+use std::ops::Deref;
+
 use actix_web::{App, Error, HttpRequest, HttpResponse, Responder, server};
 use actix_web::http::Method;
 use actix_web::middleware::{Middleware, Response, Started};
@@ -25,10 +27,15 @@ impl<S> Middleware<S> for Headers {
     /// future, which should resolve before next middleware get called.
     fn start(&self, req: &HttpRequest<S>) -> Result<Started, Error> {
         info!("GOT REQUEST for {}", req.path());
+        let a = req.cookie("a");
+        info!("Cookie a={:?}", a);
+        let cookies = req.cookies().unwrap();
+        for c in cookies.deref() {
+            info!("Cookie: {:?}", c);
+        }
         Ok(Started::Done)
     }
 }
-
 
 fn index(_req: &HttpRequest) -> &'static str {
     info!("Got request!");
@@ -36,13 +43,6 @@ fn index(_req: &HttpRequest) -> &'static str {
 }
 
 fn get_users(_req: &HttpRequest) -> Result<HttpResponse, Error> {
-/*
-    let users = vec![
-        UserDTO { username: "Test1".to_string() },
-        UserDTO { username: "Test2".to_string() },
-        UserDTO { username: "Test3".to_string() },
-    ];
-*/
     let users: Vec<UserDTO> = dao::get_users()
         .into_iter()
         .map(|u| UserDTO { username: u.username})
