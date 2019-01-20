@@ -6,31 +6,6 @@ use sha3::{Digest, Sha3_256};
 use models::{NewUser, User};
 use schema::users::dsl::*;
 
-pub fn insert_default_users(conn: &SqliteConnection) {
-    let default_users = vec![
-        NewUser {
-            username: "admin".to_string(),
-            password: "admin".to_string(),
-            is_admin: true,
-        },
-        NewUser {
-            username: "user".to_string(),
-            password: "user".to_string(),
-            is_admin: false,
-        },
-    ];
-    for user in &default_users {
-        if let Ok(is_admin_exist) =
-        select(exists(users.filter(username.eq(&user.username)))).get_result::<bool>(conn)
-        {
-            if !is_admin_exist {
-                let new_user = create_user(&user, conn);
-                assert_eq!(new_user, Ok(1), "Adding '{}' user FAILED", &user.username);
-            }
-        }
-    }
-}
-
 pub fn create_user(new_user: &NewUser, conn: &SqliteConnection) -> QueryResult<usize> {
     insert_into(users).values(new_user).execute(conn)
 }
@@ -73,8 +48,12 @@ mod tests {
         conn
     }
 
+    fn user_count(conn: &SqliteConnection) -> i64 {
+        users.select(count(id)).first(conn).unwrap()
+    }
+
     fn assert_user_count(expected: i64, conn: &SqliteConnection) {
-        let user_count: i64 = users.select(count(id)).first(conn).unwrap();
+        let user_count = user_count(conn);
         assert_eq!(user_count, expected);
     }
 
@@ -85,18 +64,21 @@ mod tests {
             let _ = log4rs::init_file("log4rs.yml", Default::default());
             let conn = &initialize_db();
 
-            // Check if DB is empty
-            assert_user_count(0, conn);
+            let initially_user_count = user_count(conn);
+
+            let test_user = "test_admin";
+            let test_updated_user = "test_updated_admin";
+            let test_pass = "test_admin_pass";
 
             // Insert new_user
             let new_user = NewUser {
-                username: "admin".to_string(),
-                password: "admin_pass".to_string(),
+                username: test_user.to_string(),
+                password: test_pass.to_string(),
                 is_admin: true,
             };
             let rows_inserted = insert_into(users).values(&new_user).execute(conn);
             assert_eq!(Ok(1), rows_inserted);
-            assert_user_count(1, conn);
+            assert_user_count(initially_user_count + 1, conn);
 
             // Read user
             let users_in_db = users
@@ -112,36 +94,21 @@ mod tests {
 
             // Update username to "new_admin"
             let rows_updated = diesel::update(users.filter(id.eq(user.id)))
-                .set(username.eq("new_admin".to_string()))
+                .set(username.eq(test_updated_user.to_string()))
                 .execute(conn);
             assert_eq!(Ok(1), rows_updated);
 
             // Read updated_user and check if have changed username
             let updated_user = users.filter(id.eq(user.id)).first::<User>(conn).unwrap();
-            assert_eq!(&"new_admin".to_string(), &updated_user.username);
+            assert_eq!(&test_updated_user.to_string(), &updated_user.username);
             assert_eq!(&new_user.password, &updated_user.password);
             assert_eq!(&new_user.is_admin, &updated_user.is_admin);
 
-            // Delete user from DB and DB should be empty
+            // Delete user from DB and DB should be in initial state
             diesel::delete(users.filter(id.eq(user.id)))
                 .execute(conn)
                 .unwrap();
-            assert_user_count(0, conn);
-        })
-    }
-
-    #[test]
-    fn check_insert_default_users() {
-        MON.with_lock(|_| {
-            // Initialize
-            let _ = log4rs::init_file("log4rs.yml", Default::default());
-            let conn = &initialize_db();
-
-            // Check if DB is empty
-            assert_user_count(0, conn);
-
-            insert_default_users(conn);
-            assert_user_count(2, conn);
+            assert_user_count(initially_user_count, conn);
         })
     }
 
@@ -163,9 +130,9 @@ mod tests {
             // Initialize
             let _ = log4rs::init_file("log4rs.yml", Default::default());
             let conn = &initialize_db();
-            insert_default_users(conn);
+            let initially_user_count = user_count(conn);
             let all_users = get_users(conn);
-            assert_eq!(all_users.len(), 2)
+            assert_eq!(all_users.len() as i64, initially_user_count)
         })
     }
 }
