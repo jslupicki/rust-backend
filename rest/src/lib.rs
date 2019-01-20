@@ -2,6 +2,8 @@ extern crate actix_web;
 extern crate cookie;
 extern crate dao;
 #[macro_use]
+extern crate lazy_static;
+#[macro_use]
 extern crate log;
 extern crate log4rs;
 extern crate serde;
@@ -9,11 +11,13 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
+use std::collections::HashMap;
 use std::ops::Deref;
+use std::sync::Mutex;
 
-use actix_web::{App, Error, HttpRequest, HttpResponse, Responder, server};
+use actix_web::{App, Error, HttpRequest, HttpResponse, server};
 use actix_web::http::Method;
-use actix_web::middleware::{Middleware, Response, Started};
+use actix_web::middleware::{Middleware, Started};
 use cookie::Cookie;
 
 #[derive(Serialize, Deserialize)]
@@ -35,6 +39,10 @@ impl<S> Middleware<S> for Headers {
         }
         Ok(Started::Done)
     }
+}
+
+lazy_static! {
+    static ref SESSIONS: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
 }
 
 fn index(_req: &HttpRequest) -> Result<HttpResponse, Error> {
@@ -74,8 +82,12 @@ pub fn start() {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    fn session_test() {
+        let mut sessions = SESSIONS.lock().unwrap();
+        sessions.insert("key".to_string(), "value".to_string());
+        assert_eq!(&"value".to_string(), sessions.get(&"key".to_string()).unwrap());
     }
 }
