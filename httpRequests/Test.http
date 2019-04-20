@@ -9,9 +9,19 @@ GET http://localhost:8088/
 Accept: text/plain
 Cookie: a=1;b=3;c=4
 
-###
 
-GET http://localhost:8088/users
+###
+GET http://{{host}}:{{port}}/users
 Accept: application/json
+
+### Failed test: check response status is 200
+GET https://httpbin.org/status/400
+
+> {%
+client.test("Request executed successfully", function() {
+    client.log("Hello world");
+  client.assert(response.status === 200, "Response status is not 200");
+});
+%}
 
 ###
