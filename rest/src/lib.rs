@@ -67,14 +67,26 @@ fn get_users(_req: &HttpRequest) -> Result<HttpResponse, Error> {
         .body(body))
 }
 
+fn get_user_template(_req: &HttpRequest) -> Result<HttpResponse, Error> {
+    let user = UserDTO { username: "".to_string() };
+    let body = serde_json::to_string(&user)?;
+    Ok(HttpResponse::Ok()
+        .content_type("application/json")
+        .body(body))
+}
+
 pub fn start() {
     info!("Start application");
 
-    server::new(|| App::new()
-        .middleware(Headers)
-        .resource("/", |r| r.f(index))
-        .resource("/users", |r| r.method(Method::GET).f(get_users))
-    )
+    let apps = || vec![
+        App::new()
+            .middleware(Headers)
+            .resource("/", |r| r.f(index))
+            .resource("/users", |r| r.method(Method::GET).f(get_users))
+            .resource("/users/template", |r| r.method(Method::GET).f(get_user_template))
+    ];
+
+    server::new( apps)
         .bind("127.0.0.1:8088")
         .unwrap()
         .run();
