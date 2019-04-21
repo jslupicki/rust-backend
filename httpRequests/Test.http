@@ -9,9 +9,12 @@ GET http://localhost:8088/
 Accept: text/plain
 Cookie: a=1;b=3;c=4
 
-
 ###
 GET http://{{host}}:{{port}}/users
+Accept: application/json
+
+###
+GET http://{{host}}:{{port}}/users/template
 Accept: application/json
 
 ### Failed test: check response status is 200
