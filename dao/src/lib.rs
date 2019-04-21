@@ -41,10 +41,6 @@ pub fn create_connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
         .expect("Failed to create pool.")
 }
 
-pub fn test() {
-    println!("Hello world");
-}
-
 pub fn get_users() -> Vec<User> {
     let conn = pool.get().unwrap();
     users_dao::get_users(&conn)

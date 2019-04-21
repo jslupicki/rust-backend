@@ -17,7 +17,6 @@ use cookie::Cookie;
 mod session;
 mod user;
 
-
 fn index(_req: &HttpRequest) -> Result<HttpResponse, Error> {
     info!("Got request!");
     Ok(
@@ -28,15 +27,21 @@ fn index(_req: &HttpRequest) -> Result<HttpResponse, Error> {
     )
 }
 
-pub fn start() {
-    info!("Start application");
+fn main_app() -> App {
+    App::new()
+        .resource("/", |r| r.f(index))
+}
 
-    let apps = || vec![
-        App::new().resource("/", |r| r.f(index)),
-        user::user_app()
+pub fn start() {
+    info!("Start REST");
+
+    let app_factory = || vec![
+        // Order of prefixes is important - should be from most specific to less.
+        user::user_app("/users"),
+        main_app(),
     ];
 
-    server::new(apps)
+    server::new(app_factory)
         .bind("127.0.0.1:8088")
         .unwrap()
         .run();

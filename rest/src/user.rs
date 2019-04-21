@@ -45,9 +45,10 @@ fn get_user_template(_req: &HttpRequest) -> Result<HttpResponse, Error> {
         .body(body))
 }
 
-pub fn user_app() -> App {
+pub fn user_app(prefix: &str) -> App {
     App::new()
         .middleware(Headers)
-        .resource("/users", |r| r.method(Method::GET).f(get_users))
-        .resource("/users/template", |r| r.method(Method::GET).f(get_user_template))
+        .prefix(prefix)
+        .resource("", |r| r.method(Method::GET).f(get_users))
+        .resource("/template", |r| r.method(Method::GET).f(get_user_template))
 }
