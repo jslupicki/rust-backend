@@ -1,8 +1,78 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
+use actix_web::{App, Error, HttpRequest, HttpResponse, Json};
+use actix_web::error::ErrorUnauthorized;
+use actix_web::http::Method;
+use actix_web::middleware::{Middleware, Started};
+use cookie::Cookie;
+
 lazy_static! {
     static ref SESSIONS: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
+}
+
+pub struct Headers;
+
+impl<S> Middleware<S> for Headers {
+    /// Method is called when request is ready. It may return
+    /// future, which should resolve before next middleware get called.
+    fn start(&self, req: &HttpRequest<S>) -> Result<Started, Error> {
+        info!("GOT REQUEST for {}", req.path());
+        let session = req.cookie("session");
+        if session.is_some() {
+            let sessions = SESSIONS.lock().unwrap();
+            if sessions.contains_key(&session.unwrap().value().to_string()) {
+                return Ok(Started::Done);
+            }
+        }
+        Err(ErrorUnauthorized("You are not authorized to access this endpoint"))
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct LoginDTO {
+    username: String,
+    password: String,
+}
+
+fn login(body: Json<LoginDTO>) -> Result<HttpResponse, Error> {
+    info!("Try to login '{}' with password '{}'", body.username, body.password);
+    Ok(
+        HttpResponse::Ok()
+            .content_type("text/plain")
+            .body(format!("Login '{}' with password '{}' - NOT YET IMPLEMENTED", body.username, body.password))
+    )
+}
+
+fn logout(req: &HttpRequest) -> Result<HttpResponse, Error> {
+    let session = req.cookie("session").unwrap_or_else(|| Cookie::new("n", "not exist"));
+    info!("Logout from session '{}'", session.value());
+    Ok(
+        HttpResponse::Ok()
+            .content_type("text/plain")
+            .body(format!("Logout from session '{}' - NOT YET IMPLEMENTED", session.value()))
+    )
+}
+
+fn get_login_template(_req: &HttpRequest) -> Result<HttpResponse, Error> {
+    let login = LoginDTO {
+        username: "".to_string(),
+        password: "".to_string(),
+    };
+    let body = serde_json::to_string(&login)?;
+    Ok(HttpResponse::Ok()
+        .content_type("application/json")
+        .body(body))
+}
+
+pub fn session_app(prefix: &str) -> App {
+    App::new()
+        .prefix(prefix)
+        .resource("", |r| {
+            r.method(Method::POST).with(login);
+            r.method(Method::DELETE).f(logout);
+        })
+        .resource("/template", |r| r.method(Method::GET).f(get_login_template))
 }
 
 #[cfg(test)]

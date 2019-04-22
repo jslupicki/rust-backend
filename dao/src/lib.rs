@@ -28,7 +28,7 @@ mod schema;
 mod users_dao;
 
 lazy_static! {
-    static ref pool: Pool<ConnectionManager<SqliteConnection>> = create_connection_pool();
+    static ref POOL: Pool<ConnectionManager<SqliteConnection>> = create_connection_pool();
 }
 
 pub fn create_connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
@@ -42,6 +42,6 @@ pub fn create_connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
 }
 
 pub fn get_users() -> Vec<User> {
-    let conn = pool.get().unwrap();
+    let conn = POOL.get().unwrap();
     users_dao::get_users(&conn)
 }

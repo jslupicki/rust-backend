@@ -38,6 +38,7 @@ pub fn start() {
     let app_factory = || vec![
         // Order of prefixes is important - should be from most specific to less.
         user::user_app("/users"),
+        session::session_app("/auth"),
         main_app(),
     ];
 

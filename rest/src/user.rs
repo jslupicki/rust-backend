@@ -1,28 +1,11 @@
-use std::ops::Deref;
-
 use actix_web::{App, Error, HttpRequest, HttpResponse};
 use actix_web::http::Method;
-use actix_web::middleware::{Middleware, Started};
+
+use crate::session::Headers;
 
 #[derive(Serialize, Deserialize)]
 struct UserDTO {
     username: String
-}
-
-struct Headers;
-
-impl<S> Middleware<S> for Headers {
-    /// Method is called when request is ready. It may return
-    /// future, which should resolve before next middleware get called.
-    fn start(&self, req: &HttpRequest<S>) -> Result<Started, Error> {
-        info!("GOT REQUEST for {}", req.path());
-        let a = req.cookie("a");
-        info!("Cookie a={:?}", a);
-        for c in req.cookies().unwrap().deref() {
-            info!("Cookie: {:?}", c);
-        }
-        Ok(Started::Done)
-    }
 }
 
 fn get_users(_req: &HttpRequest) -> Result<HttpResponse, Error> {
