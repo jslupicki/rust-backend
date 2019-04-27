@@ -30,7 +30,7 @@ lazy_static! {
     static ref POOL: Pool<ConnectionManager<SqliteConnection>> = create_connection_pool();
 }
 
-pub fn create_connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
+fn create_connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
     dotenv().ok();
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let manager = ConnectionManager::<SqliteConnection>::new(database_url);
