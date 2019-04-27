@@ -20,6 +20,15 @@ pub fn get_users(conn: &SqliteConnection) -> Vec<User> {
     users.load::<User>(conn).expect("Load users failed")
 }
 
+pub fn validate_user(username_p: String, password_p: String, conn: &SqliteConnection) -> bool {
+    let how_many_users_fit: i64 = users
+        .select(count(id))
+        .filter(username.eq(username_p).and(password.eq(password_p)))
+        .first(conn)
+        .expect("Error validate user");
+    how_many_users_fit > 0
+}
+
 #[cfg(test)]
 mod tests {
     use std::fs::remove_file;
@@ -133,6 +142,35 @@ mod tests {
             let initially_user_count = user_count(conn);
             let all_users = get_users(conn);
             assert_eq!(all_users.len() as i64, initially_user_count)
+        })
+    }
+
+    #[test]
+    fn check_validate_user() {
+        MON.with_lock(|_| {
+            // Initialize
+            let _ = log4rs::init_file("log4rs.yml", Default::default());
+            let conn = &initialize_db();
+            assert_eq!(
+                true,
+                validate_user(
+                    "admin".to_string(),
+                    "fb001dfcffd1c899f3297871406242f097aecf1a5342ccf3ebcd116146188e4b".to_string(),
+                    conn,
+                )
+            );
+            assert_eq!(
+                false,
+                validate_user(
+                    "wrong".to_string(),
+                    "fb001dfcffd1c899f3297871406242f097aecf1a5342ccf3ebcd116146188e4b".to_string(),
+                    conn,
+                )
+            );
+            assert_eq!(
+                false,
+                validate_user("admin".to_string(), "wrong".to_string(), conn)
+            );
         })
     }
 }

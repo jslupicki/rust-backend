@@ -1,9 +1,11 @@
 #[macro_use]
 extern crate diesel;
+#[macro_use]
 extern crate diesel_migrations;
 extern crate dotenv;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
 extern crate log;
 extern crate log4rs;
 extern crate monitor;
@@ -41,4 +43,9 @@ pub fn create_connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
 pub fn get_users() -> Vec<User> {
     let conn = POOL.get().unwrap();
     users_dao::get_users(&conn)
+}
+
+pub fn validate_user(username: String, password: String) -> bool {
+    let conn = POOL.get().unwrap();
+    users_dao::validate_user(username, password, &conn)
 }
