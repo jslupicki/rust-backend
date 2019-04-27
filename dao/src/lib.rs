@@ -1,11 +1,9 @@
 #[macro_use]
 extern crate diesel;
-#[macro_use]
 extern crate diesel_migrations;
 extern crate dotenv;
 #[macro_use]
 extern crate lazy_static;
-#[macro_use]
 extern crate log;
 extern crate log4rs;
 extern crate monitor;
@@ -15,13 +13,12 @@ extern crate sha3;
 
 use std::env;
 
-use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use dotenv::dotenv;
 use r2d2::Pool;
 use r2d2_diesel::ConnectionManager;
 
-use models::{NewUser, User};
+use models::User;
 
 mod models;
 mod schema;
