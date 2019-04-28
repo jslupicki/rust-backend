@@ -70,10 +70,10 @@ fn logout(req: &HttpRequest) -> Result<HttpResponse, Error> {
         .cookie("session")
         .unwrap_or_else(|| Cookie::new("n", "not exist"));
     info!("Logout from session '{}'", session.value());
-    Ok(HttpResponse::Ok().content_type("text/plain").body(format!(
-        "Logout from session '{}' - NOT YET IMPLEMENTED",
-        session.value()
-    )))
+    SESSIONS.lock().unwrap().remove(session.value());
+    Ok(HttpResponse::Ok()
+        .content_type("text/plain")
+        .body(format!("Logout from session '{}'", session.value())))
 }
 
 fn get_login_template(_req: &HttpRequest) -> Result<HttpResponse, Error> {
