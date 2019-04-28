@@ -20,7 +20,7 @@ pub fn get_users(conn: &SqliteConnection) -> Vec<User> {
     users.load::<User>(conn).expect("Load users failed")
 }
 
-pub fn validate_user(username_p: String, password_p: String, conn: &SqliteConnection) -> bool {
+pub fn validate_user(username_p: &String, password_p: &String, conn: &SqliteConnection) -> bool {
     let how_many_users_fit: i64 = users
         .select(count(id))
         .filter(username.eq(username_p).and(password.eq(password_p)))
@@ -154,22 +154,22 @@ mod tests {
             assert_eq!(
                 true,
                 validate_user(
-                    "admin".to_string(),
-                    "fb001dfcffd1c899f3297871406242f097aecf1a5342ccf3ebcd116146188e4b".to_string(),
+                    &"admin".to_string(),
+                    &"fb001dfcffd1c899f3297871406242f097aecf1a5342ccf3ebcd116146188e4b".to_string(),
                     conn,
                 )
             );
             assert_eq!(
                 false,
                 validate_user(
-                    "wrong".to_string(),
-                    "fb001dfcffd1c899f3297871406242f097aecf1a5342ccf3ebcd116146188e4b".to_string(),
+                    &"wrong".to_string(),
+                    &"fb001dfcffd1c899f3297871406242f097aecf1a5342ccf3ebcd116146188e4b".to_string(),
                     conn,
                 )
             );
             assert_eq!(
                 false,
-                validate_user("admin".to_string(), "wrong".to_string(), conn)
+                validate_user(&"admin".to_string(), &"wrong".to_string(), conn)
             );
         })
     }

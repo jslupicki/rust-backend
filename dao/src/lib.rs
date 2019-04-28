@@ -45,7 +45,7 @@ pub fn get_users() -> Vec<User> {
     users_dao::get_users(&conn)
 }
 
-pub fn validate_user(username: String, password: String) -> bool {
+pub fn validate_user(username: &String, password: &String) -> bool {
     let conn = POOL.get().unwrap();
     users_dao::validate_user(username, password, &conn)
 }
