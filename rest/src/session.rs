@@ -47,6 +47,12 @@ fn login(body: Json<LoginDTO>) -> Result<HttpResponse, Error> {
         "Try to login '{}' with password '{}'",
         &body.username, &body.password
     );
+    for user in dao::get_users() {
+        debug!(
+            "There is user '{}' with password '{}' - admin {}",
+            user.username, user.password, user.is_admin
+        );
+    }
     if dao::validate_user(&body.username, &body.password) {
         let session_value = Uuid::new_v4().hyphenated().to_string();
         let session_cookie = Cookie::new("session", session_value.clone());
@@ -54,7 +60,7 @@ fn login(body: Json<LoginDTO>) -> Result<HttpResponse, Error> {
             "Login '{}' with password '{}' - session '{}'",
             body.username, body.password, &session_value
         ));
-        response.add_cookie(&session_cookie).unwrap();
+        response.add_cookie(&session_cookie)?;
         SESSIONS
             .lock()
             .unwrap()

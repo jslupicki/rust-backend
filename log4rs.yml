@@ -10,3 +10,13 @@ root:
   level: info
   appenders:
     - stdout
+
+loggers:
+  main:
+    level: debug
+  rest:
+    level: debug
+  dao:
+    level: debug
+
+

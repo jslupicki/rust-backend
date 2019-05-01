@@ -21,6 +21,10 @@ pub fn get_users(conn: &SqliteConnection) -> Vec<User> {
 }
 
 pub fn validate_user(username_p: &String, password_p: &String, conn: &SqliteConnection) -> bool {
+    info!(
+        "Validate user '{}' with password '{}'",
+        username_p, password_p
+    );
     let how_many_users_fit: i64 = users
         .select(count(id))
         .filter(username.eq(username_p).and(password.eq(password_p)))

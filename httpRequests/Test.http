@@ -5,35 +5,38 @@
 # * 'ptr' and 'ptrp' create a POST request with a simple or parameter-like body;
 # * 'mptr' and 'fptr' create a POST request to submit a form with a text or file field (multipart/form-data);
 
-GET http://localhost:8088/
-Accept: text/plain
-Cookie: a=1;b=3;c=4
-
-###
+### List of existed users
 GET http://{{host}}:{{port}}/users
 Accept: application/json
+Cookie: {{current_session}}
 
-###
+### Template for /user endpoint
 GET http://{{host}}:{{port}}/users/template
 Accept: application/json
+Cookie: {{current_session}}
 
-###
+### Template for /auth endpoint
 GET http://{{host}}:{{port}}/auth/template
 Accept: application/json
 
-###
+### Login as 'admin' - it set 'current_session' - IMPORTANT: it is full cookie in format 'session=333a89f2-5753-46f6-b82e-349b0fbf3c00'
 POST http://{{host}}:{{port}}/auth
 Accept: text/plain
 Content-Type: application/json
 
 {
   "username": "admin",
-  "password": "admin_pw"
+  "password": "fb001dfcffd1c899f3297871406242f097aecf1a5342ccf3ebcd116146188e4b"
 }
 
-###
+> {%
+client.global.set("current_session", response.headers.valuesOf("Set-Cookie")[0]);
+client.log("current_session=" + client.global.get("current_session"));
+%}
+
+### Logout from current session
 DELETE http://{{host}}:{{port}}/auth
 Accept: text/plain
-Cookie: session=123
+Cookie: {{current_session}}
 
 ###
