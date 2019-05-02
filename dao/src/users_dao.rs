@@ -1,6 +1,9 @@
+use std::io::stdout;
+
 use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
+use diesel_migrations::RunMigrationsError;
 use sha3::{Digest, Sha3_256};
 
 use models::{NewUser, User};
@@ -31,6 +34,13 @@ pub fn validate_user(username_p: &String, password_p: &String, conn: &SqliteConn
         .first(conn)
         .expect("Error validate user");
     how_many_users_fit > 0
+}
+
+embed_migrations!("./migrations");
+
+pub fn initialize_db(conn: &SqliteConnection) -> Result<(), RunMigrationsError> {
+    info!("Initialize DB (if not exist), run migrations");
+    embedded_migrations::run_with_output(conn, &mut stdout())
 }
 
 #[cfg(test)]

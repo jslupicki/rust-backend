@@ -8,5 +8,6 @@ fn main() {
     log4rs::init_file("log4rs.yml", Default::default()).unwrap();
     info!("Start application");
 
+    dao::initialize_db().unwrap();
     rest::start();
 }

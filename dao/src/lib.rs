@@ -15,7 +15,9 @@ extern crate sha3;
 
 use std::env;
 
+use diesel::migration::MigrationError;
 use diesel::sqlite::SqliteConnection;
+use diesel_migrations::RunMigrationsError;
 use dotenv::dotenv;
 use r2d2::Pool;
 use r2d2_diesel::ConnectionManager;
@@ -48,4 +50,9 @@ pub fn get_users() -> Vec<User> {
 pub fn validate_user(username: &String, password: &String) -> bool {
     let conn = POOL.get().unwrap();
     users_dao::validate_user(username, password, &conn)
+}
+
+pub fn initialize_db() -> Result<(), RunMigrationsError> {
+    let conn = POOL.get().unwrap();
+    users_dao::initialize_db(&conn)
 }
