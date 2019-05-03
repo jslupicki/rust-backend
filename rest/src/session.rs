@@ -18,16 +18,23 @@ impl<S> Middleware<S> for Headers {
     /// Method is called when request is ready. It may return
     /// future, which should resolve before next middleware get called.
     fn start(&self, req: &HttpRequest<S>) -> Result<Started, Error> {
-        info!("GOT REQUEST for {}", req.path());
-        let session = req.cookie("session");
-        if session.is_some()
-            && SESSIONS
-                .lock()
-                .unwrap()
-                .contains_key(&session.unwrap().value().to_string())
-        {
+        let session = &req
+            .cookie("session")
+            .map_or("nothing".to_string(), |c| c.value().to_string());
+        if let Some(username) = SESSIONS.lock().unwrap().get(session) {
+            info!(
+                "Allow access to {} with session {} for user {}",
+                req.path(),
+                session,
+                username
+            );
             Ok(Started::Done)
         } else {
+            error!(
+                "Unauthorized access to {} with session {}",
+                req.path(),
+                session
+            );
             Err(ErrorUnauthorized(format!(
                 "You are not authorized to access '{}'",
                 req.path()
@@ -55,16 +62,16 @@ fn login(body: Json<LoginDTO>) -> Result<HttpResponse, Error> {
     }
     if dao::validate_user(&body.username, &body.password) {
         let session_value = Uuid::new_v4().hyphenated().to_string();
-        let session_cookie = Cookie::new("session", session_value.clone());
+        let session_cookie = Cookie::new("session", session_value.to_owned());
         let mut response = HttpResponse::Ok().content_type("text/plain").body(format!(
             "Login '{}' with password '{}' - session '{}'",
-            body.username, body.password, &session_value
+            &body.username, &body.password, &session_value
         ));
         response.add_cookie(&session_cookie)?;
         SESSIONS
             .lock()
             .unwrap()
-            .insert(session_value, "exist".to_string());
+            .insert(session_value, body.username.to_owned());
         Ok(response)
     } else {
         Err(ErrorUnauthorized("Wrong login or password"))
