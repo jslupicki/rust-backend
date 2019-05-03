@@ -17,12 +17,13 @@ use std::env;
 
 use diesel::migration::MigrationError;
 use diesel::sqlite::SqliteConnection;
+use diesel::QueryResult;
 use diesel_migrations::RunMigrationsError;
 use dotenv::dotenv;
 use r2d2::Pool;
 use r2d2_diesel::ConnectionManager;
 
-use models::User;
+pub use models::{NewUser, User};
 
 mod models;
 mod schema;
@@ -40,6 +41,11 @@ fn create_connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
         .max_size(15)
         .build(manager)
         .expect("Failed to create pool.")
+}
+
+pub fn create_user(new_user: &NewUser) -> QueryResult<usize> {
+    let conn = POOL.get().unwrap();
+    users_dao::create_user(new_user, &conn)
 }
 
 pub fn get_users() -> Vec<User> {
