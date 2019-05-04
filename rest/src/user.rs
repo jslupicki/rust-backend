@@ -1,3 +1,4 @@
+use actix_web::error::ErrorNotFound;
 use actix_web::http::Method;
 use actix_web::{App, Error, HttpRequest, HttpResponse};
 
@@ -33,6 +34,19 @@ fn get_users(_req: &HttpRequest) -> Result<HttpResponse, Error> {
         .body(body))
 }
 
+fn get_user(req: &HttpRequest) -> Result<HttpResponse, Error> {
+    let id: i32 = req.match_info().query("id")?;
+    match dao::get_user(id) {
+        Some(user) => {
+            let body = serde_json::to_string(&UserDTO::from(user))?;
+            Ok(HttpResponse::Ok()
+                .content_type("application/json")
+                .body(body))
+        }
+        None => Err(ErrorNotFound(format!("Can't find user with id = {}", id))),
+    }
+}
+
 fn get_user_template(_req: &HttpRequest) -> Result<HttpResponse, Error> {
     let user = UserDTO {
         username: "".to_string(),
@@ -50,5 +64,6 @@ pub fn user_app(prefix: &str) -> App {
         .middleware(Headers)
         .prefix(prefix)
         .resource("", |r| r.method(Method::GET).f(get_users))
+        .resource("{id}", |r| r.method(Method::GET).f(get_user))
         .resource("/template", |r| r.method(Method::GET).f(get_user_template))
 }

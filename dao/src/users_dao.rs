@@ -29,6 +29,15 @@ pub fn get_users(conn: &SqliteConnection) -> Vec<User> {
     users.load::<User>(conn).expect("Load users failed")
 }
 
+pub fn get_user(id_to_find: i32, conn: &SqliteConnection) -> Option<User> {
+    users
+        .filter(id.eq(id_to_find))
+        .limit(1)
+        .load::<User>(conn)
+        .expect("Error loading user")
+        .pop()
+}
+
 pub fn validate_user(username_p: &String, password_p: &String, conn: &SqliteConnection) -> bool {
     info!(
         "Validate user '{}' with password '{}'",
@@ -86,15 +95,6 @@ mod tests {
     fn assert_user_count(expected: i64, conn: &SqliteConnection) {
         let user_count = user_count(conn);
         assert_eq!(user_count, expected);
-    }
-
-    fn get_user(id_to_find: i32, conn: &SqliteConnection) -> Option<User> {
-        users
-            .filter(id.eq(id_to_find))
-            .limit(1)
-            .load::<User>(conn)
-            .expect("Error loading user")
-            .pop()
     }
 
     #[test]
@@ -227,6 +227,18 @@ mod tests {
                     format!("Should report: UNIQUE constraint failed: users.username and instead I got {:?}", rows_inserted)
                 ),
             }
+        })
+    }
+
+    #[test]
+    fn check_get_user() {
+        MON.with_lock(|_| {
+            // Initialize
+            let _ = log4rs::init_file("log4rs.yml", Default::default());
+            let conn = &initialize_db();
+            let user_in_db = get_user(2, conn).unwrap();
+            assert_eq!("admin", user_in_db.username);
+            assert_eq!(true, user_in_db.is_admin);
         })
     }
 

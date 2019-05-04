@@ -58,6 +58,11 @@ pub fn get_users() -> Vec<User> {
     users_dao::get_users(&conn)
 }
 
+pub fn get_user(id: i32) -> Option<User> {
+    let conn = POOL.get().unwrap();
+    users_dao::get_user(id, &conn)
+}
+
 pub fn validate_user(username: &String, password: &String) -> bool {
     let conn = POOL.get().unwrap();
     users_dao::validate_user(username, password, &conn)
