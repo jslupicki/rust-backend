@@ -10,6 +10,11 @@ GET http://{{host}}:{{port}}/users
 Accept: application/json
 Cookie: {{current_session}}
 
+### Get user with ID = 1
+GET http://{{host}}:{{port}}/users/1
+Accept: application/json
+Cookie: {{current_session}}
+
 ### Template for /user endpoint
 GET http://{{host}}:{{port}}/users/template
 Accept: application/json
