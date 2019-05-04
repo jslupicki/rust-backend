@@ -1,7 +1,6 @@
 use schema::users;
 
-#[derive(Queryable)]
-#[derive(Debug)]
+#[derive(Queryable, AsChangeset, Debug)]
 pub struct User {
     pub id: i32,
     pub username: String,
@@ -10,7 +9,7 @@ pub struct User {
 }
 
 #[derive(Insertable)]
-#[table_name="users"]
+#[table_name = "users"]
 #[derive(Debug)]
 pub struct NewUser {
     pub username: String,

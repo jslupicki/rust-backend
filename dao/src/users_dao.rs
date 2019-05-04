@@ -13,6 +13,12 @@ pub fn create_user(new_user: &NewUser, conn: &SqliteConnection) -> QueryResult<u
     insert_into(users).values(new_user).execute(conn)
 }
 
+pub fn update_user(user: &User, conn: &SqliteConnection) -> QueryResult<usize> {
+    diesel::update(users.filter(id.eq(user.id)))
+        .set(user)
+        .execute(conn)
+}
+
 pub fn hash(text: &String) -> String {
     let mut h = Sha3_256::default();
     h.input(text.as_bytes());
@@ -80,6 +86,15 @@ mod tests {
     fn assert_user_count(expected: i64, conn: &SqliteConnection) {
         let user_count = user_count(conn);
         assert_eq!(user_count, expected);
+    }
+
+    fn get_user(id_to_find: i32, conn: &SqliteConnection) -> Option<User> {
+        users
+            .filter(id.eq(id_to_find))
+            .limit(1)
+            .load::<User>(conn)
+            .expect("Error loading user")
+            .pop()
     }
 
     #[test]
@@ -212,6 +227,21 @@ mod tests {
                     format!("Should report: UNIQUE constraint failed: users.username and instead I got {:?}", rows_inserted)
                 ),
             }
+        })
+    }
+
+    #[test]
+    fn check_update_user() {
+        MON.with_lock(|_| {
+            // Initialize
+            let _ = log4rs::init_file("log4rs.yml", Default::default());
+            let conn = &initialize_db();
+            let mut admin_in_db = get_user(2, conn).unwrap();
+            admin_in_db.password = "new_password".to_string();
+            let updated_rows = update_user(&admin_in_db, conn);
+            assert_eq!(Ok(1), updated_rows);
+            let admin_in_db = get_user(2, conn).unwrap();
+            assert_eq!("new_password".to_string(), admin_in_db.password);
         })
     }
 }

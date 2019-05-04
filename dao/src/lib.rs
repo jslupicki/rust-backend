@@ -48,6 +48,11 @@ pub fn create_user(new_user: &NewUser) -> QueryResult<usize> {
     users_dao::create_user(new_user, &conn)
 }
 
+pub fn update_user(user: &User) -> QueryResult<usize> {
+    let conn = POOL.get().unwrap();
+    users_dao::update_user(user, &conn)
+}
+
 pub fn get_users() -> Vec<User> {
     let conn = POOL.get().unwrap();
     users_dao::get_users(&conn)
