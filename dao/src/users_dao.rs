@@ -50,6 +50,8 @@ mod tests {
     use std::sync::Arc;
 
     use diesel;
+    use diesel::result::DatabaseErrorKind::UniqueViolation;
+    use diesel::result::Error::DatabaseError;
     use log4rs;
     use monitor::Monitor;
 
@@ -185,6 +187,31 @@ mod tests {
                 false,
                 validate_user(&"admin".to_string(), &"wrong".to_string(), conn)
             );
+        })
+    }
+
+    #[test]
+    fn should_prevent_creating_users_with_the_same_username() {
+        MON.with_lock(|_| {
+            // Initialize
+            let _ = log4rs::init_file("log4rs.yml", Default::default());
+            let conn = &initialize_db();
+            // Insert new_user
+            let new_user = NewUser {
+                username: "admin".to_string(),
+                password: "not_important".to_string(),
+                is_admin: true,
+            };
+            let rows_inserted = insert_into(users).values(&new_user).execute(conn);
+            match rows_inserted {
+                Err(DatabaseError(UniqueViolation, msg)) => {
+                    assert_eq!(msg.message(), "UNIQUE constraint failed: users.username")
+                }
+                _ => assert!(
+                    false,
+                    format!("Should report: UNIQUE constraint failed: users.username and instead I got {:?}", rows_inserted)
+                ),
+            }
         })
     }
 }
