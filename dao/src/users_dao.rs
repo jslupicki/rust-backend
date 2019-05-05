@@ -9,10 +9,12 @@ use sha3::{Digest, Sha3_256};
 use models::{NewUser, User};
 use schema::users::dsl::*;
 
+//TODO: should return ID of created user
 pub fn create_user(new_user: &NewUser, conn: &SqliteConnection) -> QueryResult<usize> {
     insert_into(users).values(new_user).execute(conn)
 }
 
+//TODO: should return updated user
 pub fn update_user(user: &User, conn: &SqliteConnection) -> QueryResult<usize> {
     diesel::update(users.filter(id.eq(user.id)))
         .set(user)

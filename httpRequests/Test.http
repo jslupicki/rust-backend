@@ -5,25 +5,9 @@
 # * 'ptr' and 'ptrp' create a POST request with a simple or parameter-like body;
 # * 'mptr' and 'fptr' create a POST request to submit a form with a text or file field (multipart/form-data);
 
-### List of existed users
-GET http://{{host}}:{{port}}/users
-Accept: application/json
-Cookie: {{current_session}}
-
-### Get user with ID = 1
-GET http://{{host}}:{{port}}/users/1
-Accept: application/json
-Cookie: {{current_session}}
-
-### Template for /user endpoint
-GET http://{{host}}:{{port}}/users/template
-Accept: application/json
-Cookie: {{current_session}}
-
-### Template for /auth endpoint
-GET http://{{host}}:{{port}}/auth/template
-Accept: application/json
-
+#################
+# Authorization #
+#################
 ### Login as 'admin' - it set 'current_session' - IMPORTANT: it is full cookie in format 'session=333a89f2-5753-46f6-b82e-349b0fbf3c00'
 POST http://{{host}}:{{port}}/auth
 Accept: text/plain
@@ -43,5 +27,50 @@ client.log("current_session=" + client.global.get("current_session"));
 DELETE http://{{host}}:{{port}}/auth
 Accept: text/plain
 Cookie: {{current_session}}
+
+### Template for /auth endpoint
+GET http://{{host}}:{{port}}/auth/template
+Accept: application/json
+
+#########
+# Users #
+#########
+### List of existed users
+GET http://{{host}}:{{port}}/users
+Accept: application/json
+Cookie: {{current_session}}
+
+### Get user with ID = 1
+GET http://{{host}}:{{port}}/users/1
+Accept: application/json
+Cookie: {{current_session}}
+
+### Template for /user endpoint
+GET http://{{host}}:{{port}}/users/template
+Accept: application/json
+Cookie: {{current_session}}
+
+### Update user
+PUT http://{{host}}:{{port}}/users
+Content-Type: application/json
+Cookie: {{current_session}}
+
+{
+  "id": 1,
+  "username": "user2",
+  "password": "user2_pw",
+  "is_admin": false
+}
+
+### Create user
+POST http://{{host}}:{{port}}/users
+Content-Type: application/json
+Cookie: {{current_session}}
+
+{
+  "username": "user3",
+  "password": "user3_pw",
+  "is_admin": false
+}
 
 ###
