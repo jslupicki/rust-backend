@@ -1,6 +1,8 @@
+use serde::Serialize;
+
 use schema::users;
 
-#[derive(Queryable, AsChangeset, Debug)]
+#[derive(Queryable, AsChangeset, Debug, Serialize)]
 pub struct User {
     pub id: i32,
     pub username: String,
@@ -8,9 +10,8 @@ pub struct User {
     pub is_admin: bool,
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, Debug)]
 #[table_name = "users"]
-#[derive(Debug)]
 pub struct NewUser {
     pub username: String,
     pub password: String,

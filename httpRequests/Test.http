@@ -56,10 +56,10 @@ Content-Type: application/json
 Cookie: {{current_session}}
 
 {
-  "id": 1,
+  "id": 2,
   "username": "user2",
   "password": "user2_pw",
-  "is_admin": false
+  "is_admin": true
 }
 
 ### Create user

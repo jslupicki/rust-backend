@@ -9,16 +9,22 @@ use sha3::{Digest, Sha3_256};
 use models::{NewUser, User};
 use schema::users::dsl::*;
 
-//TODO: should return ID of created user
-pub fn create_user(new_user: &NewUser, conn: &SqliteConnection) -> QueryResult<usize> {
-    insert_into(users).values(new_user).execute(conn)
+pub fn create_user(new_user: &NewUser, conn: &SqliteConnection) -> QueryResult<User> {
+    conn.transaction(|| {
+        insert_into(users)
+            .values(new_user)
+            .execute(conn)
+            .and_then(|_| users.order(id.desc()).first(conn))
+    })
 }
 
-//TODO: should return updated user
-pub fn update_user(user: &User, conn: &SqliteConnection) -> QueryResult<usize> {
-    diesel::update(users.filter(id.eq(user.id)))
-        .set(user)
-        .execute(conn)
+pub fn update_user(user: &User, conn: &SqliteConnection) -> QueryResult<User> {
+    conn.transaction(|| {
+        diesel::update(users.filter(id.eq(user.id)))
+            .set(user)
+            .execute(conn)
+            .and_then(|_| users.filter(id.eq(user.id)).first(conn))
+    })
 }
 
 pub fn hash(text: &String) -> String {
@@ -34,10 +40,9 @@ pub fn get_users(conn: &SqliteConnection) -> Vec<User> {
 pub fn get_user(id_to_find: i32, conn: &SqliteConnection) -> Option<User> {
     users
         .filter(id.eq(id_to_find))
-        .limit(1)
-        .load::<User>(conn)
-        .expect("Error loading user")
-        .pop()
+        .first(conn)
+        .optional()
+        .unwrap_or(None)
 }
 
 pub fn validate_user(username_p: &String, password_p: &String, conn: &SqliteConnection) -> bool {
@@ -253,9 +258,33 @@ mod tests {
             let mut admin_in_db = get_user(2, conn).unwrap();
             admin_in_db.password = "new_password".to_string();
             let updated_rows = update_user(&admin_in_db, conn);
-            assert_eq!(Ok(1), updated_rows);
+            assert!(updated_rows.is_ok());
             let admin_in_db = get_user(2, conn).unwrap();
             assert_eq!("new_password".to_string(), admin_in_db.password);
+            let updated_user = updated_rows.unwrap();
+            assert_eq!(2, updated_user.id);
+            assert_eq!("admin".to_string(), updated_user.username);
+            assert_eq!("new_password".to_string(), updated_user.password);
+            assert_eq!(true, updated_user.is_admin);
+        })
+    }
+
+    #[test]
+    fn create_user_should_return_created_user() {
+        MON.with_lock(|_| {
+            // Initialize
+            let _ = log4rs::init_file("log4rs.yml", Default::default());
+            let conn = &initialize_db();
+            let new_user = NewUser {
+                username: "new_username".to_string(),
+                password: "new_password".to_string(),
+                is_admin: false,
+            };
+            let created_user = create_user(&new_user, conn).unwrap();
+            assert_eq!(3, created_user.id);
+            assert_eq!(new_user.username, created_user.username);
+            assert_eq!(new_user.password, created_user.password);
+            assert_eq!(new_user.is_admin, created_user.is_admin);
         })
     }
 }
