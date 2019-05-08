@@ -2,10 +2,9 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 use actix_web::error::ErrorUnauthorized;
-use actix_web::http::Method;
+use actix_web::http::{Cookie, Method};
 use actix_web::middleware::{Middleware, Started};
 use actix_web::{App, Error, HttpRequest, HttpResponse, Json};
-use cookie::Cookie;
 use uuid::Uuid;
 
 lazy_static! {
@@ -61,7 +60,7 @@ fn login(body: Json<LoginDTO>) -> Result<HttpResponse, Error> {
         );
     }
     if dao::validate_user(&body.username, &body.password) {
-        let session_value = Uuid::new_v4().hyphenated().to_string();
+        let session_value = Uuid::new_v4().to_hyphenated().to_string();
         let session_cookie = Cookie::new("session", session_value.to_owned());
         let mut response = HttpResponse::Ok().content_type("text/plain").body(format!(
             "Login '{}' with password '{}' - session '{}'",

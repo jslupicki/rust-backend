@@ -14,8 +14,8 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate uuid;
 
+use actix_web::http::Cookie;
 use actix_web::{server, App, Error, HttpRequest, HttpResponse};
-use cookie::Cookie;
 
 mod session;
 mod user;
