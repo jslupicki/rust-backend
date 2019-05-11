@@ -31,6 +31,8 @@ use r2d2_diesel::ConnectionManager;
 
 pub use models::{NewUser, User};
 
+#[cfg(test)]
+mod common_for_tests;
 mod employees_dao;
 mod models;
 mod schema;

@@ -1,0 +1,29 @@
+use std::io::stdout;
+
+#[cfg(test)]
+use diesel::dsl::*;
+use diesel::prelude::*;
+use diesel::sqlite::SqliteConnection;
+use diesel_migrations::RunMigrationsError;
+
+use schema::users::dsl::*;
+
+static TEST_DB_NAME: &str = ":memory:";
+
+embed_migrations!("./migrations");
+
+pub fn initialize_db() -> SqliteConnection {
+    let conn = SqliteConnection::establish(TEST_DB_NAME)
+        .expect(&format!("Error connecting to {}", TEST_DB_NAME));
+    embedded_migrations::run_with_output(&conn, &mut stdout()).unwrap();
+    conn
+}
+
+pub fn user_count(conn: &SqliteConnection) -> i64 {
+    users.select(count(id)).first(conn).unwrap()
+}
+
+pub fn assert_user_count(expected: i64, conn: &SqliteConnection) {
+    let user_count = user_count(conn);
+    assert_eq!(user_count, expected);
+}

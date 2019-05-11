@@ -17,16 +17,7 @@ mod tests {
     use diesel::result::Error::DatabaseError;
     use log4rs;
 
+    use common_for_tests::*;
+
     use super::*;
-
-    static TEST_DB_NAME: &str = ":memory:";
-
-    embed_migrations!("./migrations");
-
-    fn initialize_db() -> SqliteConnection {
-        let conn = SqliteConnection::establish(TEST_DB_NAME)
-            .expect(&format!("Error connecting to {}", TEST_DB_NAME));
-        embedded_migrations::run_with_output(&conn, &mut stdout()).unwrap();
-        conn
-    }
 }
