@@ -19,6 +19,7 @@ extern crate serde_derive;
 extern crate sha3;
 
 use std::env;
+use std::io::stdout;
 
 use diesel::migration::MigrationError;
 use diesel::sqlite::SqliteConnection;
@@ -30,6 +31,7 @@ use r2d2_diesel::ConnectionManager;
 
 pub use models::{NewUser, User};
 
+mod employees_dao;
 mod models;
 mod schema;
 mod users_dao;
@@ -37,6 +39,8 @@ mod users_dao;
 lazy_static! {
     static ref POOL: Pool<ConnectionManager<SqliteConnection>> = create_connection_pool();
 }
+
+embed_migrations!("./migrations");
 
 fn create_connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
     dotenv().ok();
@@ -74,6 +78,7 @@ pub fn validate_user(username: &String, password: &String) -> bool {
 }
 
 pub fn initialize_db() -> Result<(), RunMigrationsError> {
-    let conn = POOL.get().unwrap();
-    users_dao::initialize_db(&conn)
+    let conn: &SqliteConnection = &POOL.get().unwrap();
+    info!("Initialize DB (if not exist), run migrations");
+    embedded_migrations::run_with_output(conn, &mut stdout())
 }
