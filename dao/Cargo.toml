@@ -7,7 +7,7 @@ authors = ["jslupicki <jan@slupicki.com>"]
 [dependencies]
 log = "*"
 log4rs = "*"
-diesel = { version = "*", features = ["sqlite"] }
+diesel = { version = "*", features = ["sqlite", "chrono", "numeric"] }
 diesel_migrations = "*"
 dotenv = "*"
 r2d2 = "*"
@@ -18,3 +18,5 @@ monitor = "*"
 serde = "*"
 serde_derive = "*"
 serde_json = "*"
+chrono =  { version = "*", features = ["serde"] }
+bigdecimal = { version = "0.0.14", features = ["serde"] }
