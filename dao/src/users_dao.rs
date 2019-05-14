@@ -71,9 +71,7 @@ mod tests {
 
     #[test]
     fn crud_operations_on_user() {
-        // Initialize
-        let _ = log4rs::init_file("log4rs.yml", Default::default());
-        let conn = &initialize_db();
+        let conn = &initialize();
 
         let initially_user_count = user_count(conn);
 
@@ -124,7 +122,7 @@ mod tests {
 
     #[test]
     fn check_hash() {
-        let _ = log4rs::init_file("log4rs.yml", Default::default());
+        initialize_log();
         let text = String::from("text");
         let hash = hash(&text);
         info!("hash of '{}': {}", text, hash);
@@ -136,9 +134,7 @@ mod tests {
 
     #[test]
     fn check_get_users() {
-        // Initialize
-        let _ = log4rs::init_file("log4rs.yml", Default::default());
-        let conn = &initialize_db();
+        let conn = &initialize();
         let initially_user_count = user_count(conn);
         let all_users = get_users(conn);
         assert_eq!(all_users.len() as i64, initially_user_count)
@@ -146,9 +142,7 @@ mod tests {
 
     #[test]
     fn check_validate_user() {
-        // Initialize
-        let _ = log4rs::init_file("log4rs.yml", Default::default());
-        let conn = &initialize_db();
+        let conn = &initialize();
         assert_eq!(
             true,
             validate_user(
@@ -175,7 +169,7 @@ mod tests {
     fn should_prevent_creating_users_with_the_same_username() {
         // Initialize
         let _ = log4rs::init_file("log4rs.yml", Default::default());
-        let conn = &initialize_db();
+        let conn = &initialize();
         // Insert new_user
         let new_user = NewUser {
             username: "admin".to_string(),
@@ -196,9 +190,7 @@ mod tests {
 
     #[test]
     fn check_get_user() {
-        // Initialize
-        let _ = log4rs::init_file("log4rs.yml", Default::default());
-        let conn = &initialize_db();
+        let conn = &initialize();
         let user_in_db = get_user(2, conn).unwrap();
         assert_eq!("admin", user_in_db.username);
         assert_eq!(true, user_in_db.is_admin);
@@ -206,9 +198,7 @@ mod tests {
 
     #[test]
     fn check_update_user() {
-        // Initialize
-        let _ = log4rs::init_file("log4rs.yml", Default::default());
-        let conn = &initialize_db();
+        let conn = &initialize();
         let mut admin_in_db = get_user(2, conn).unwrap();
         admin_in_db.password = "new_password".to_string();
         let updated_rows = update_user(&admin_in_db, conn);
@@ -224,9 +214,7 @@ mod tests {
 
     #[test]
     fn create_user_should_return_created_user() {
-        // Initialize
-        let _ = log4rs::init_file("log4rs.yml", Default::default());
-        let conn = &initialize_db();
+        let conn = &initialize();
         let new_user = NewUser {
             username: "new_username".to_string(),
             password: "new_password".to_string(),
