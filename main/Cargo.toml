@@ -7,6 +7,6 @@ edition = "2018"
 [dependencies]
 dao = { path = "../dao" }
 rest = { path = "../rest" }
-log = "*"
-log4rs = "*"
-actix-web = "*"
+log = "0.4.6"
+log4rs = "0.8.3"
+actix-web = "0.7.19"
