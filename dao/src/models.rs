@@ -1,5 +1,4 @@
 use chrono::NaiveDate;
-use serde::Serialize;
 
 use schema::{contacts, employees, salaries, users};
 

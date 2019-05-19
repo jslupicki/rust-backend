@@ -1,7 +1,6 @@
 use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
-use diesel_migrations::RunMigrationsError;
 use sha3::{Digest, Sha3_256};
 
 use models::{NewUser, User};
@@ -23,12 +22,6 @@ pub fn update_user(user: &User, conn: &SqliteConnection) -> QueryResult<User> {
             .execute(conn)
             .and_then(|_| users.filter(id.eq(user.id)).first(conn))
     })
-}
-
-pub fn hash(text: &String) -> String {
-    let mut h = Sha3_256::default();
-    h.input(text.as_bytes());
-    format!("{:x}", h.result())
 }
 
 pub fn get_users(conn: &SqliteConnection) -> Vec<User> {
@@ -56,10 +49,14 @@ pub fn validate_user(username_p: &String, password_p: &String, conn: &SqliteConn
     how_many_users_fit > 0
 }
 
+pub fn hash(text: &String) -> String {
+    let mut h = Sha3_256::default();
+    h.input(text.as_bytes());
+    format!("{:x}", h.result())
+}
+
 #[cfg(test)]
 mod tests {
-    use std::io::stdout;
-
     use diesel;
     use diesel::result::DatabaseErrorKind::UniqueViolation;
     use diesel::result::Error::DatabaseError;

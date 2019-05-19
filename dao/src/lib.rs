@@ -20,7 +20,6 @@ extern crate sha3;
 use std::env;
 use std::io::stdout;
 
-use diesel::migration::MigrationError;
 use diesel::sqlite::SqliteConnection;
 use diesel::QueryResult;
 use diesel_migrations::RunMigrationsError;

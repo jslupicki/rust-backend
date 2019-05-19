@@ -4,7 +4,6 @@ use std::io::stdout;
 use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
-use diesel_migrations::RunMigrationsError;
 
 use schema::employees::dsl::id as employee_id;
 use schema::employees::dsl::*;
