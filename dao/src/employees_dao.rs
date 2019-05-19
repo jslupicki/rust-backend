@@ -40,6 +40,32 @@ pub fn get_employee(id_to_find: i32, conn: &SqliteConnection) -> Option<Employee
         .unwrap_or(None)
 }
 
+pub fn create_salary(new_salary: &NewSalary, conn: &SqliteConnection) -> QueryResult<Salary> {
+    conn.transaction(|| {
+        insert_into(salaries)
+            .values(new_salary)
+            .execute(conn)
+            .and_then(|_| salaries.order(salary_id.desc()).first(conn))
+    })
+}
+
+pub fn update_salary(salary: &Salary, conn: &SqliteConnection) -> QueryResult<Salary> {
+    conn.transaction(|| {
+        diesel::update(salaries.filter(salary_id.eq(salary.id)))
+            .set(salary)
+            .execute(conn)
+            .and_then(|_| salaries.filter(salary_id.eq(salary.id)).first(conn))
+    })
+}
+
+pub fn get_salary(id_to_find: i32, conn: &SqliteConnection) -> Option<Salary> {
+    salaries
+        .filter(salary_id.eq(id_to_find))
+        .first(conn)
+        .optional()
+        .unwrap_or(None)
+}
+
 #[cfg(test)]
 mod tests {
     use std::io::stdout;

@@ -25,7 +25,7 @@ table! {
         employee_id -> Integer,
         from_date -> Date,
         to_date -> Date,
-        amount -> Numeric,
+        amount -> BigInt,
         search_string -> Text,
     }
 }

@@ -1,4 +1,3 @@
-extern crate bigdecimal;
 extern crate chrono;
 #[macro_use]
 extern crate diesel;
