@@ -10,6 +10,27 @@ use schema::employees::dsl::*;
 use schema::salaries::dsl::id as salary_id;
 use schema::salaries::dsl::*;
 
+pub struct EmployeeDTO {
+    employee: Employee,
+    salaries: Vec<Salary>,
+    contacts: Vec<Contact>,
+}
+
+impl EmployeeDTO {
+    fn get(id_to_find: i32, conn: &SqliteConnection) -> Option<EmployeeDTO> {
+        employees
+            .filter(employee_id.eq(id_to_find))
+            .first(conn)
+            .optional()
+            .unwrap_or(None)
+            .map(|e| EmployeeDTO {
+                employee: e,
+                salaries: Vec::new(),
+                contacts: Vec::new(),
+            })
+    }
+}
+
 pub fn create_employee(
     new_employee: &NewEmplyee,
     conn: &SqliteConnection,
