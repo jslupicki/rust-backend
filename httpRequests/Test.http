@@ -73,4 +73,22 @@ Cookie: {{current_session}}
   "is_admin": false
 }
 
+#############
+# Employees #
+#############
+### List of existed users
+GET http://{{host}}:{{port}}/employees
+Accept: application/json
+Cookie: {{current_session}}
+
+### Get user with ID = 1
+GET http://{{host}}:{{port}}/employees/1
+Accept: application/json
+Cookie: {{current_session}}
+
+### Template for /user endpoint
+GET http://{{host}}:{{port}}/employees/template
+Accept: application/json
+Cookie: {{current_session}}
+
 ###
