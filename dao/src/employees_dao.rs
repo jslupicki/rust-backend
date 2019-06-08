@@ -75,7 +75,7 @@ mod tests {
     fn check_create_employee() {
         let conn = &initialize();
 
-        let new_employee = NewEmplyee {
+        let new_employee = NewEmployee {
             first_name: "John".to_string(),
             last_name: "Smith".to_string(),
             search_string: "some search string".to_string(),
@@ -93,7 +93,7 @@ mod tests {
     fn check_update_employee() {
         let conn = &initialize();
 
-        let new_employee = NewEmplyee {
+        let new_employee = NewEmployee {
             first_name: "John".to_string(),
             last_name: "Smith".to_string(),
             search_string: "some search string".to_string(),
