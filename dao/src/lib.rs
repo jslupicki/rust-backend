@@ -21,7 +21,7 @@ use diesel::QueryResult;
 
 pub use connection::initialize_db;
 use connection::POOL;
-pub use models::{NewUser, User};
+pub use models::*;
 
 #[cfg(test)]
 mod common_for_tests;

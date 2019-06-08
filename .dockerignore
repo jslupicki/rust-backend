@@ -1,0 +1,9 @@
+.git
+Cargo.lock
+target
+dataSources
+httpRequests
+*.iml
+*.ipr
+*.iws
+*.sqlite3

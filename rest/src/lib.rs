@@ -17,6 +17,7 @@ extern crate uuid;
 use actix_web::http::Cookie;
 use actix_web::{server, App, Error, HttpRequest, HttpResponse};
 
+mod employee;
 mod session;
 mod user;
 
@@ -39,6 +40,7 @@ pub fn start() {
         vec![
             // Order of prefixes is important - should be from most specific to less.
             user::user_app("/users"),
+            employee::employee_app("/employees"),
             session::session_app("/auth"),
             main_app(),
         ]

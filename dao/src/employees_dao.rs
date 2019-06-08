@@ -2,7 +2,7 @@ use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
-use models::{Contact, Employee, NewContact, NewEmplyee, NewSalary, Salary};
+use models::{Contact, Employee, NewContact, NewEmployee, NewSalary, Salary};
 use schema::contacts::dsl::id as contact_id;
 use schema::contacts::dsl::*;
 use schema::employees::dsl::id as employee_id;
@@ -10,29 +10,8 @@ use schema::employees::dsl::*;
 use schema::salaries::dsl::id as salary_id;
 use schema::salaries::dsl::*;
 
-pub struct EmployeeDTO {
-    employee: Employee,
-    salaries: Vec<Salary>,
-    contacts: Vec<Contact>,
-}
-
-impl EmployeeDTO {
-    fn get(id_to_find: i32, conn: &SqliteConnection) -> Option<EmployeeDTO> {
-        employees
-            .filter(employee_id.eq(id_to_find))
-            .first(conn)
-            .optional()
-            .unwrap_or(None)
-            .map(|e| EmployeeDTO {
-                employee: e,
-                salaries: Vec::new(),
-                contacts: Vec::new(),
-            })
-    }
-}
-
 pub fn create_employee(
-    new_employee: &NewEmplyee,
+    new_employee: &NewEmployee,
     conn: &SqliteConnection,
 ) -> QueryResult<Employee> {
     conn.transaction(|| {

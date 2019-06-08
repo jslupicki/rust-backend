@@ -28,7 +28,7 @@ pub struct Employee {
 
 #[derive(Insertable, Debug)]
 #[table_name = "employees"]
-pub struct NewEmplyee {
+pub struct NewEmployee {
     pub first_name: String,
     pub last_name: String,
     pub search_string: String,
