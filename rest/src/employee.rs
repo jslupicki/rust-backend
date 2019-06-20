@@ -1,10 +1,32 @@
 use actix_web::error::{ErrorInternalServerError, ErrorNotFound};
 use actix_web::http::Method;
 use actix_web::{App, Error, HttpRequest, HttpResponse, Json};
+use chrono::NaiveDate;
 
 use dao::{Contact, Employee, NewContact, NewEmployee, NewSalary, Salary};
 
 use crate::session::Headers;
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct SalaryDTO {
+    id: Option<i32>,
+    employee_id: i32,
+    from_date: NaiveDate,
+    to_date: NaiveDate,
+    amount: i64,
+    search_string: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct ContactDTO {
+    id: Option<i32>,
+    employee_id: i32,
+    from_date: NaiveDate,
+    to_date: NaiveDate,
+    phone: String,
+    address: Option<String>,
+    search_string: String,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct EmployeeDTO {
@@ -12,8 +34,8 @@ struct EmployeeDTO {
     first_name: Option<String>,
     last_name: Option<String>,
     search_string: Option<String>,
-    //    salaries: Vec<Salary>,
-    //    contacts: Vec<Contact>,
+    salaries: Vec<SalaryDTO>,
+    contacts: Vec<ContactDTO>,
 }
 
 fn get_employees(_req: &HttpRequest) -> Result<HttpResponse, Error> {

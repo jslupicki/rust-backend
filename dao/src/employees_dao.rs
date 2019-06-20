@@ -1,7 +1,11 @@
+use std::collections::HashSet;
+
+use chrono::NaiveDate;
 use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
+use connection::POOL;
 use models::{Contact, Employee, NewContact, NewEmployee, NewSalary, Salary};
 use schema::contacts::dsl::id as contact_id;
 use schema::contacts::dsl::*;
@@ -9,6 +13,103 @@ use schema::employees::dsl::id as employee_id;
 use schema::employees::dsl::*;
 use schema::salaries::dsl::id as salary_id;
 use schema::salaries::dsl::*;
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+struct SalaryDTO {
+    id: Option<i32>,
+    employee_id: Option<i32>,
+    from_date: NaiveDate,
+    to_date: NaiveDate,
+    amount: i64,
+    search_string: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+struct ContactDTO {
+    id: Option<i32>,
+    employee_id: Option<i32>,
+    from_date: NaiveDate,
+    to_date: NaiveDate,
+    phone: String,
+    address: Option<String>,
+    search_string: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct EmployeeDTO {
+    id: Option<i32>,
+    first_name: String,
+    last_name: String,
+    search_string: String,
+    salaries: HashSet<SalaryDTO>,
+    contacts: HashSet<ContactDTO>,
+}
+
+trait Crud {
+    fn get(id: i32) -> QueryResult<Self>
+    where
+        Self: Sized;
+    fn persist(&mut self) -> Option<&Self>;
+}
+
+impl From<Salary> for SalaryDTO {
+    fn from(s: Salary) -> Self {
+        SalaryDTO {
+            id: Some(s.id),
+            employee_id: Some(s.employee_id),
+            from_date: s.from_date,
+            to_date: s.to_date,
+            amount: s.amount,
+            search_string: s.search_string,
+        }
+    }
+}
+
+impl SalaryDTO {
+    fn get_with_conn(id_to_find: i32, conn: &SqliteConnection) -> Option<Self> {
+        salaries
+            .filter(salary_id.eq(id_to_find))
+            .first(conn)
+            .optional()
+            .unwrap_or(None)
+            .map(|s: Salary| SalaryDTO::from(s))
+    }
+
+    fn get(id_to_find: i32) -> Option<Self> {
+        let conn: &SqliteConnection = &POOL.get().unwrap();
+        Self::get_with_conn(id_to_find, conn)
+    }
+
+    fn persist_with_conn(&mut self, conn: &SqliteConnection) -> Option<Self> {
+        None
+        /*
+                conn.transaction(|| {
+                    if self.id.is_some() {
+                        diesel::update(salaries.filter(salary_id.eq(salary.id)))
+                        .set(salary)
+                        .execute(conn)
+                        .and_then(|_| salaries
+                            .filter(salary_id.eq(salary.id))
+                            .first(conn)
+                            .optional()
+                            .unwrap_or(None)
+                            .map()
+                        )
+                    } else {
+                        insert_into(salaries)
+                        .values(new_salary)
+                        .execute(conn)
+                        .and_then(|_| salaries.order(salary_id.desc()).first(conn))
+                    }
+                }
+        */
+    }
+
+    fn persist(&mut self) -> Option<Self> {
+        let conn: &SqliteConnection = &POOL.get().unwrap();
+        self.persist_with_conn(conn)
+    }
+}
 
 pub fn create_employee(
     new_employee: &NewEmployee,
@@ -118,5 +219,43 @@ mod tests {
             employee_to_update.search_string
         );
         assert_ne!(updated_employee.search_string, new_employee.search_string);
+    }
+
+    #[test]
+    fn check_create_salary() {
+        let conn = &initialize();
+
+        let created_employee = create_employee(
+            &NewEmployee {
+                first_name: "John".to_string(),
+                last_name: "Smith".to_string(),
+                search_string: "some search string".to_string(),
+            },
+            conn,
+        )
+        .unwrap();
+
+        let new_salary = NewSalary {
+            employee_id: created_employee.id,
+            amount: 123,
+            from_date: NaiveDate::from_ymd(2019, 6, 18),
+            to_date: NaiveDate::from_ymd(2019, 6, 19),
+            search_string: "some search string".to_string(),
+        };
+
+        let created_salary = create_salary(&new_salary, conn).unwrap();
+        assert_eq!(1, created_salary.id);
+
+        let salary_dto = SalaryDTO::get_with_conn(created_salary.id, conn);
+        assert!(salary_dto.is_some());
+        let salary_dto = salary_dto.unwrap();
+        assert_eq!(Some(created_salary.id), salary_dto.id);
+        assert_eq!(Some(created_employee.id), salary_dto.employee_id);
+        assert_eq!(created_salary.from_date, salary_dto.from_date);
+        assert_eq!(created_salary.to_date, salary_dto.to_date);
+        assert_eq!(created_salary.amount, salary_dto.amount);
+        assert_eq!(created_salary.search_string, salary_dto.search_string);
+        let salary_dto = SalaryDTO::get_with_conn(123, conn);
+        assert!(salary_dto.is_none());
     }
 }
