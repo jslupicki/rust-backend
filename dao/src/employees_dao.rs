@@ -65,6 +65,31 @@ impl From<Salary> for SalaryDTO {
     }
 }
 
+impl From<&SalaryDTO> for Salary {
+    fn from(salary_dto: &SalaryDTO) -> Self {
+        Salary {
+            id: salary_dto.id.unwrap(),
+            employee_id: salary_dto.employee_id.unwrap(),
+            from_date: salary_dto.from_date,
+            to_date: salary_dto.to_date,
+            amount: salary_dto.amount,
+            search_string: salary_dto.search_string.clone(),
+        }
+    }
+}
+
+impl From<&SalaryDTO> for NewSalary {
+    fn from(salary_dto: &SalaryDTO) -> Self {
+        NewSalary {
+            employee_id: salary_dto.employee_id.unwrap(),
+            from_date: salary_dto.from_date,
+            to_date: salary_dto.to_date,
+            amount: salary_dto.amount,
+            search_string: salary_dto.search_string.clone(),
+        }
+    }
+}
+
 impl SalaryDTO {
     fn get_with_conn(id_to_find: i32, conn: &SqliteConnection) -> Option<Self> {
         salaries
@@ -81,28 +106,31 @@ impl SalaryDTO {
     }
 
     fn persist_with_conn(&mut self, conn: &SqliteConnection) -> Option<Self> {
-        None
-        /*
-                conn.transaction(|| {
-                    if self.id.is_some() {
-                        diesel::update(salaries.filter(salary_id.eq(salary.id)))
-                        .set(salary)
-                        .execute(conn)
-                        .and_then(|_| salaries
-                            .filter(salary_id.eq(salary.id))
-                            .first(conn)
-                            .optional()
-                            .unwrap_or(None)
-                            .map()
-                        )
-                    } else {
-                        insert_into(salaries)
-                        .values(new_salary)
-                        .execute(conn)
-                        .and_then(|_| salaries.order(salary_id.desc()).first(conn))
-                    }
-                }
-        */
+        conn.transaction(|| {
+            if self.id.is_some() {
+                let self_id = self.id.unwrap();
+                diesel::update(salaries.filter(salary_id.eq(self_id)))
+                    .set(Salary::from(&*self))
+                    .execute(conn)
+                    .and_then(|_| salaries.filter(salary_id.eq(self_id)).first(conn))
+            } else {
+                insert_into(salaries)
+                    .values(NewSalary::from(&*self))
+                    .execute(conn)
+                    .and_then(|_| salaries.order(salary_id.desc()).first(conn))
+            }
+        })
+        .optional()
+        .unwrap_or(None)
+        .map(|s: Salary| {
+            self.id = Some(s.id);
+            self.employee_id = Some(s.employee_id);
+            self.from_date = s.from_date;
+            self.to_date = s.to_date;
+            self.amount = s.amount;
+            self.search_string = s.search_string.clone();
+            s.into()
+        })
     }
 
     fn persist(&mut self) -> Option<Self> {
@@ -257,5 +285,42 @@ mod tests {
         assert_eq!(created_salary.search_string, salary_dto.search_string);
         let salary_dto = SalaryDTO::get_with_conn(123, conn);
         assert!(salary_dto.is_none());
+    }
+
+    #[test]
+    fn check_persist_salary() {
+        let conn = &initialize();
+
+        let created_employee = create_employee(
+            &NewEmployee {
+                first_name: "John".to_string(),
+                last_name: "Smith".to_string(),
+                search_string: "some search string".to_string(),
+            },
+            conn,
+        )
+        .unwrap();
+
+        let mut new_salary = SalaryDTO {
+            id: None,
+            employee_id: Some(created_employee.id),
+            amount: 123,
+            from_date: NaiveDate::from_ymd(2019, 6, 18),
+            to_date: NaiveDate::from_ymd(2019, 6, 19),
+            search_string: "some search string".to_string(),
+        };
+
+        new_salary.persist_with_conn(conn);
+
+        assert_eq!(Some(1), new_salary.id);
+        assert_eq!(123, new_salary.amount);
+
+        new_salary.amount = 124;
+        new_salary.persist_with_conn(conn);
+
+        let salary = SalaryDTO::get_with_conn(new_salary.id.unwrap(), conn);
+
+        assert!(salary.is_some());
+        assert_eq!(124, salary.unwrap().amount);
     }
 }
