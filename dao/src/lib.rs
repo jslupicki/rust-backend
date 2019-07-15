@@ -32,6 +32,9 @@ mod models;
 mod sandbox;
 mod schema;
 mod users_dao;
+mod salaries_dao;
+mod contacts_dao;
+mod base_dao;
 
 pub fn create_user(new_user: &NewUser) -> QueryResult<User> {
     let conn = POOL.get().unwrap();

@@ -69,7 +69,6 @@ pub struct Contact {
 #[derive(Insertable, Debug)]
 #[table_name = "contacts"]
 pub struct NewContact {
-    pub id: i32,
     pub employee_id: i32,
     pub from_date: NaiveDate,
     pub to_date: NaiveDate,
