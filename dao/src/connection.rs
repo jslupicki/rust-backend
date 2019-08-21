@@ -1,10 +1,12 @@
+use std::env;
+use std::io::stdout;
+
+use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use diesel_migrations::RunMigrationsError;
 use dotenv::dotenv;
-use r2d2::Pool;
+use r2d2::{Pool, PooledConnection};
 use r2d2_diesel::ConnectionManager;
-use std::env;
-use std::io::stdout;
 
 lazy_static! {
     pub static ref POOL: Pool<ConnectionManager<SqliteConnection>> = create_connection_pool();
@@ -14,10 +16,17 @@ embed_migrations!("./migrations");
 
 fn create_connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
     dotenv().ok();
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let database_url = match env::var("DATABASE_URL") {
+        Ok(url) => url,
+        Err(_) => String::from("rust_backend.sqlite3"),
+    };
+    let pool_size = match env::var("POOL_SIZE") {
+        Ok(pool_size) => pool_size.parse::<u32>().unwrap(),
+        Err(_) => 1,
+    };
     let manager = ConnectionManager::<SqliteConnection>::new(database_url);
     Pool::builder()
-        .max_size(15)
+        .max_size(pool_size)
         .build(manager)
         .expect("Failed to create pool.")
 }
