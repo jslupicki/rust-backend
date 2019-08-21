@@ -6,15 +6,15 @@ use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
 use connection::POOL;
+use contacts_dao::ContactDTO;
 use models::{Contact, Employee, NewContact, NewEmployee, NewSalary, Salary};
+use salaries_dao::SalaryDTO;
 use schema::contacts::dsl::id as contact_id;
 use schema::contacts::dsl::*;
 use schema::employees::dsl::id as employee_id;
 use schema::employees::dsl::*;
 use schema::salaries::dsl::id as salary_id;
 use schema::salaries::dsl::*;
-use contacts_dao::{ContactDTO};
-use salaries_dao::{SalaryDTO};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct EmployeeDTO {
@@ -83,6 +83,7 @@ pub fn get_salary(id_to_find: i32, conn: &SqliteConnection) -> Option<Salary> {
 
 #[cfg(test)]
 mod tests {
+    use base_dao::Crud;
     use common_for_tests::*;
 
     use super::*;
@@ -197,13 +198,13 @@ mod tests {
             search_string: "some search string".to_string(),
         };
 
-        new_salary.persist_with_conn(conn);
+        new_salary.persist_in_transaction(conn);
 
         assert_eq!(Some(1), new_salary.id);
         assert_eq!(123, new_salary.amount);
 
         new_salary.amount = 124;
-        new_salary.persist_with_conn(conn);
+        new_salary.persist_in_transaction(conn);
 
         let salary = SalaryDTO::get_with_conn(new_salary.id.unwrap(), conn);
 
@@ -272,13 +273,13 @@ mod tests {
             search_string: "some search string".to_string(),
         };
 
-        new_salary.persist_with_conn(conn);
+        new_salary.persist_in_transaction(conn);
 
         assert_eq!(Some(1), new_salary.id);
         assert_eq!(123, new_salary.amount);
 
         new_salary.amount = 124;
-        new_salary.persist_with_conn(conn);
+        new_salary.persist_in_transaction(conn);
 
         let salary = SalaryDTO::get_with_conn(new_salary.id.unwrap(), conn);
 
