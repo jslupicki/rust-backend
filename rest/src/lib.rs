@@ -15,7 +15,7 @@ extern crate serde_json;
 extern crate uuid;
 
 use actix_web::http::Cookie;
-use actix_web::{server, App, Error, HttpRequest, HttpResponse};
+use actix_web::{HttpServer, App, Error, HttpRequest, HttpResponse};
 
 mod employee;
 mod session;
@@ -46,7 +46,7 @@ pub fn start() {
         ]
     };
 
-    server::new(app_factory)
+    HttpServer::new(app_factory)
         .bind("127.0.0.1:8088")
         .unwrap()
         .run();
