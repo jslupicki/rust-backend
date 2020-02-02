@@ -1,7 +1,9 @@
 use actix_web::error::{ErrorInternalServerError, ErrorNotFound};
 use actix_web::http::Method;
+use actix_web::web::Json;
 use actix_web::{App, Error, HttpRequest, HttpResponse};
-use actix_web::web::{Json};
+use actix_service::ServiceFactory;
+use actix_web::dev::{MessageBody, ServiceRequest, ServiceResponse};
 use chrono::NaiveDate;
 
 use dao::{Contact, Employee, NewContact, NewEmployee, NewSalary, Salary};
@@ -67,7 +69,17 @@ fn get_employee_template(_req: &HttpRequest) -> Result<HttpResponse, Error> {
         .body(body))
 }
 
-pub fn employee_app(prefix: &str) -> App {
+pub fn employee_app(
+    prefix: &str,
+) -> App<
+    impl ServiceFactory<
+        Config = (),
+        Request = ServiceRequest,
+        Response = ServiceResponse<impl MessageBody>,
+        Error = Error,
+    >,
+    impl MessageBody,
+> {
     App::new()
         .middleware(Headers)
         .prefix(prefix)

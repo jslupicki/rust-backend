@@ -3,9 +3,11 @@ use std::sync::Mutex;
 
 use actix_web::error::ErrorUnauthorized;
 use actix_web::http::{Cookie, Method};
-use actix_web::middleware::{Middleware, Started};
+use actix_web::web::Json;
 use actix_web::{App, Error, HttpRequest, HttpResponse};
-use actix_web::web::{Json};
+use actix_service::ServiceFactory;
+use actix_web::dev::{MessageBody, ServiceRequest, ServiceResponse};
+
 use uuid::Uuid;
 
 lazy_static! {
@@ -100,7 +102,17 @@ fn get_login_template(_req: &HttpRequest) -> Result<HttpResponse, Error> {
         .body(body))
 }
 
-pub fn session_app(prefix: &str) -> App {
+pub fn session_app(
+    prefix: &str,
+) -> App<
+    impl ServiceFactory<
+        Config = (),
+        Request = ServiceRequest,
+        Response = ServiceResponse<impl MessageBody>,
+        Error = Error,
+    >,
+    impl MessageBody,
+> {
     App::new()
         .prefix(prefix)
         .resource("", |r| {

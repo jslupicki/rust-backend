@@ -1,4 +1,5 @@
 extern crate actix_web;
+extern crate actix_service;
 extern crate cookie;
 extern crate dao;
 #[macro_use]
@@ -15,7 +16,9 @@ extern crate serde_json;
 extern crate uuid;
 
 use actix_web::http::Cookie;
-use actix_web::{HttpServer, App, Error, HttpRequest, HttpResponse};
+use actix_web::{App, Error, HttpRequest, HttpResponse, HttpServer};
+use actix_service::ServiceFactory;
+use actix_web::dev::{MessageBody, ServiceRequest, ServiceResponse};
 
 mod employee;
 mod session;
@@ -29,7 +32,15 @@ fn index(_req: &HttpRequest) -> Result<HttpResponse, Error> {
         .body("Hello world"))
 }
 
-fn main_app() -> App {
+fn main_app() -> App<
+    impl ServiceFactory<
+        Config = (),
+        Request = ServiceRequest,
+        Response = ServiceResponse<impl MessageBody>,
+        Error = Error,
+    >,
+    impl MessageBody,
+> {
     App::new().resource("/", |r| r.f(index))
 }
 
