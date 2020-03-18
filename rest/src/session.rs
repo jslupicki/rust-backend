@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
+use actix_service::ServiceFactory;
+use actix_web::dev::{MessageBody, ServiceRequest, ServiceResponse};
 use actix_web::error::ErrorUnauthorized;
 use actix_web::http::{Cookie, Method};
 use actix_web::web::Json;
-use actix_web::{App, Error, HttpRequest, HttpResponse};
-use actix_service::ServiceFactory;
-use actix_web::dev::{MessageBody, ServiceRequest, ServiceResponse};
+use actix_web::{App, Error, HttpMessage, HttpRequest, HttpResponse};
 
 use uuid::Uuid;
 
@@ -15,7 +15,9 @@ lazy_static! {
 }
 
 pub fn is_login(req: ServiceRequest) -> Result<(), Error> {
-    let session = req.cookie("session").map_or("nothing".to_string(), |c| c.value().to_string());
+    let session = req
+        .cookie("session")
+        .map_or("nothing".to_string(), |c| c.value().to_string());
     if let Some(username) = SESSIONS.lock().unwrap().get(session) {
         info!(
             "Allow access to {} with session {} for user {}",

@@ -6,16 +6,16 @@ authors = ["jslupicki <jan@slupicki.com>"]
 
 [dependencies]
 log = "0.4.8"
-log4rs = "0.8.3"
+log4rs = "0.11.0"
 diesel = { version = "1.4.3", features = ["sqlite", "chrono"] }
 diesel_migrations = "1.4.0"
 dotenv = "0.15.0"
-r2d2 = "0.8.6"
+r2d2 = "0.8.8"
 r2d2-diesel = "1.0.0"
 lazy_static = "1.4.0"
 sha3 = "0.8.2"
 monitor = "0.1.0"
-serde = "1.0.102"
-serde_derive = "1.0.102"
-serde_json = "1.0.41"
-chrono =  { version = "0.4.9", features = ["serde"] }
+serde = "1.0.104"
+serde_derive = "1.0.104"
+serde_json = "1.0.48"
+chrono =  { version = "0.4.11", features = ["serde"] }
