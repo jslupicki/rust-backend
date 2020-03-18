@@ -32,6 +32,7 @@ fn index(_req: &HttpRequest) -> Result<HttpResponse, Error> {
         .body("Hello world"))
 }
 
+// TODO: replace by configure: https://docs.rs/actix-web/2.0.0/actix_web/struct.App.html#method.configure
 fn main_app() -> App<
     impl ServiceFactory<
         Config = (),

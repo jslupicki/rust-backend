@@ -14,34 +14,26 @@ lazy_static! {
     static ref SESSIONS: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
 }
 
-pub struct Headers;
-
-impl<S> Middleware<S> for Headers {
-    /// Method is called when request is ready. It may return
-    /// future, which should resolve before next middleware get called.
-    fn start(&self, req: &HttpRequest<S>) -> Result<Started, Error> {
-        let session = &req
-            .cookie("session")
-            .map_or("nothing".to_string(), |c| c.value().to_string());
-        if let Some(username) = SESSIONS.lock().unwrap().get(session) {
-            info!(
-                "Allow access to {} with session {} for user {}",
-                req.path(),
-                session,
-                username
-            );
-            Ok(Started::Done)
-        } else {
-            error!(
-                "Unauthorized access to {} with session {}",
-                req.path(),
-                session
-            );
-            Err(ErrorUnauthorized(format!(
-                "You are not authorized to access '{}'",
-                req.path()
-            )))
-        }
+pub fn is_login(req: ServiceRequest) -> Result<(), Error> {
+    let session = req.cookie("session").map_or("nothing".to_string(), |c| c.value().to_string());
+    if let Some(username) = SESSIONS.lock().unwrap().get(session) {
+        info!(
+            "Allow access to {} with session {} for user {}",
+            req.path(),
+            session,
+            username
+        );
+        Ok(())
+    } else {
+        error!(
+            "Unauthorized access to {} with session {}",
+            req.path(),
+            session
+        );
+        Err(ErrorUnauthorized(format!(
+            "You are not authorized to access '{}'",
+            req.path()
+        )))
     }
 }
 
@@ -102,6 +94,7 @@ fn get_login_template(_req: &HttpRequest) -> Result<HttpResponse, Error> {
         .body(body))
 }
 
+// TODO: replace by configure: https://docs.rs/actix-web/2.0.0/actix_web/struct.App.html#method.configure
 pub fn session_app(
     prefix: &str,
 ) -> App<

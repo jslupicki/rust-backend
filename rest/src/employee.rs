@@ -8,8 +8,6 @@ use chrono::NaiveDate;
 
 use dao::{Contact, Employee, NewContact, NewEmployee, NewSalary, Salary};
 
-use crate::session::Headers;
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct SalaryDTO {
     id: Option<i32>,
@@ -69,6 +67,7 @@ fn get_employee_template(_req: &HttpRequest) -> Result<HttpResponse, Error> {
         .body(body))
 }
 
+// TODO: replace by configure: https://docs.rs/actix-web/2.0.0/actix_web/struct.App.html#method.configure
 pub fn employee_app(
     prefix: &str,
 ) -> App<
@@ -81,7 +80,6 @@ pub fn employee_app(
     impl MessageBody,
 > {
     App::new()
-        .middleware(Headers)
         .prefix(prefix)
         .resource("", |r| {
             r.method(Method::GET).f(get_employees);

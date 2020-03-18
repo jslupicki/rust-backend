@@ -2,10 +2,10 @@ use actix_web::error::{ErrorInternalServerError, ErrorNotFound};
 use actix_web::http::Method;
 use actix_web::{App, Error, HttpRequest, HttpResponse};
 use actix_web::web::{Json};
+use actix_service::ServiceFactory;
+use actix_web::dev::{MessageBody, ServiceRequest, ServiceResponse};
 
 use dao::{NewUser, User};
-
-use crate::session::Headers;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct UserDTO {
@@ -62,7 +62,7 @@ fn get_users(_req: &HttpRequest) -> Result<HttpResponse, Error> {
 }
 
 fn get_user(req: &HttpRequest) -> Result<HttpResponse, Error> {
-    let id: i32 = req.match_info().query("id")?;
+    let id: i32 = req.match_info().query("id").parse().unwrap();
     match dao::get_user(id) {
         Some(user) => {
             let body = serde_json::to_string(&UserDTO::from(user))?;
@@ -109,9 +109,17 @@ fn get_user_template(_req: &HttpRequest) -> Result<HttpResponse, Error> {
         .body(body))
 }
 
-pub fn user_app(prefix: &str) -> App {
+// TODO: replace by configure: https://docs.rs/actix-web/2.0.0/actix_web/struct.App.html#method.configure
+pub fn user_app(prefix: &str) -> App<
+    impl ServiceFactory<
+        Config = (),
+        Request = ServiceRequest,
+        Response = ServiceResponse<impl MessageBody>,
+        Error = Error,
+    >,
+    impl MessageBody,
+> {
     App::new()
-        .middleware(Headers)
         .prefix(prefix)
         .resource("", |r| {
             r.method(Method::GET).f(get_users);
