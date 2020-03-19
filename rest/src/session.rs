@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use actix_service::ServiceFactory;
-use actix_web::dev::{MessageBody, ServiceRequest, ServiceResponse};
+use actix_web::dev::ServiceRequest;
 use actix_web::error::ErrorUnauthorized;
-use actix_web::http::{Cookie, Method};
+use actix_web::http::Cookie;
 use actix_web::web::Json;
-use actix_web::{App, Error, HttpMessage, HttpRequest, HttpResponse};
+use actix_web::{Error, HttpMessage, HttpRequest, HttpResponse, web};
 
 use uuid::Uuid;
 
@@ -18,7 +17,7 @@ pub fn is_login(req: ServiceRequest) -> Result<(), Error> {
     let session = req
         .cookie("session")
         .map_or("nothing".to_string(), |c| c.value().to_string());
-    if let Some(username) = SESSIONS.lock().unwrap().get(session) {
+    if let Some(username) = SESSIONS.lock().unwrap().get(&session) {
         info!(
             "Allow access to {} with session {} for user {}",
             req.path(),
@@ -45,7 +44,7 @@ struct LoginDTO {
     password: String,
 }
 
-fn login(body: Json<LoginDTO>) -> Result<HttpResponse, Error> {
+async fn login(body: Json<LoginDTO>) -> Result<HttpResponse, Error> {
     info!(
         "Try to login '{}' with password '{}'",
         &body.username, &body.password
@@ -74,7 +73,7 @@ fn login(body: Json<LoginDTO>) -> Result<HttpResponse, Error> {
     }
 }
 
-fn logout(req: &HttpRequest) -> Result<HttpResponse, Error> {
+async fn logout(req: HttpRequest) -> Result<HttpResponse, Error> {
     let session = req
         .cookie("session")
         .unwrap_or_else(|| Cookie::new("n", "not exist"));
@@ -85,7 +84,7 @@ fn logout(req: &HttpRequest) -> Result<HttpResponse, Error> {
         .body(format!("Logout from session '{}'", session.value())))
 }
 
-fn get_login_template(_req: &HttpRequest) -> Result<HttpResponse, Error> {
+async fn get_login_template() -> Result<HttpResponse, Error> {
     let login = LoginDTO {
         username: "".to_string(),
         password: "".to_string(),
@@ -96,25 +95,14 @@ fn get_login_template(_req: &HttpRequest) -> Result<HttpResponse, Error> {
         .body(body))
 }
 
-// TODO: replace by configure: https://docs.rs/actix-web/2.0.0/actix_web/struct.App.html#method.configure
-pub fn session_app(
-    prefix: &str,
-) -> App<
-    impl ServiceFactory<
-        Config = (),
-        Request = ServiceRequest,
-        Response = ServiceResponse<impl MessageBody>,
-        Error = Error,
-    >,
-    impl MessageBody,
-> {
-    App::new()
-        .prefix(prefix)
-        .resource("", |r| {
-            r.method(Method::POST).with(login);
-            r.method(Method::DELETE).f(logout);
-        })
-        .resource("/template", |r| r.method(Method::GET).f(get_login_template))
+pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
+    cfg.service(web::resource(prefix)
+        .route(web::post().to(login))
+        .route(web::delete().to(logout))
+    );
+    cfg.service(web::resource(format!("{}{}", prefix, "/template"))
+        .route(web::get().to(get_login_template))
+    );    
 }
 
 #[cfg(test)]

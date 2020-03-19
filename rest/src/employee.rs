@@ -1,12 +1,6 @@
-use actix_web::error::{ErrorInternalServerError, ErrorNotFound};
-use actix_web::http::Method;
 use actix_web::web::Json;
-use actix_web::{App, Error, HttpRequest, HttpResponse};
-use actix_service::ServiceFactory;
-use actix_web::dev::{MessageBody, ServiceRequest, ServiceResponse};
+use actix_web::{Error, HttpResponse, web};
 use chrono::NaiveDate;
-
-use dao::{Contact, Employee, NewContact, NewEmployee, NewSalary, Salary};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct SalaryDTO {
@@ -39,55 +33,44 @@ struct EmployeeDTO {
     contacts: Vec<ContactDTO>,
 }
 
-fn get_employees(_req: &HttpRequest) -> Result<HttpResponse, Error> {
+async fn get_employees() -> Result<HttpResponse, Error> {
     let body = "NOT YET IMPLEMENTED".to_string();
     Ok(HttpResponse::Ok()
         .content_type("application/json")
         .body(body))
 }
 
-fn get_employee(req: &HttpRequest) -> Result<HttpResponse, Error> {
+async fn get_employee() -> Result<HttpResponse, Error> {
     let body = "NOT YET IMPLEMENTED".to_string();
     Ok(HttpResponse::Ok()
         .content_type("application/json")
         .body(body))
 }
 
-fn update_employee(employee_json: Json<EmployeeDTO>) -> Result<HttpResponse, Error> {
+async fn update_employee(employee_json: Json<EmployeeDTO>) -> Result<HttpResponse, Error> {
     let body = "NOT YET IMPLEMENTED".to_string();
     Ok(HttpResponse::Ok()
         .content_type("application/json")
         .body(body))
 }
 
-fn get_employee_template(_req: &HttpRequest) -> Result<HttpResponse, Error> {
+async fn get_employee_template() -> Result<HttpResponse, Error> {
     let body = "NOT YET IMPLEMENTED".to_string();
     Ok(HttpResponse::Ok()
         .content_type("application/json")
         .body(body))
 }
 
-// TODO: replace by configure: https://docs.rs/actix-web/2.0.0/actix_web/struct.App.html#method.configure
-pub fn employee_app(
-    prefix: &str,
-) -> App<
-    impl ServiceFactory<
-        Config = (),
-        Request = ServiceRequest,
-        Response = ServiceResponse<impl MessageBody>,
-        Error = Error,
-    >,
-    impl MessageBody,
-> {
-    App::new()
-        .prefix(prefix)
-        .resource("", |r| {
-            r.method(Method::GET).f(get_employees);
-            r.method(Method::PUT).with(update_employee);
-            r.method(Method::POST).with(update_employee);
-        })
-        .resource("/template", |r| {
-            r.method(Method::GET).f(get_employee_template)
-        })
-        .resource("{id}", |r| r.method(Method::GET).f(get_employee))
+pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
+    cfg.service(web::resource(prefix)
+        .route(web::get().to(get_employees))
+        .route(web::put().to(update_employee))
+        .route(web::post().to(update_employee))
+    );
+    cfg.service(web::resource(format!("{}{}", prefix, "/{id}}"))
+        .route(web::get().to(get_employee))
+    );    
+   cfg.service(web::resource(format!("{}{}", prefix, "/template"))
+        .route(web::get().to(get_employee_template))
+    );    
 }

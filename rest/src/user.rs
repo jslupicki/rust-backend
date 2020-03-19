@@ -1,9 +1,6 @@
 use actix_web::error::{ErrorInternalServerError, ErrorNotFound};
-use actix_web::http::Method;
-use actix_web::{App, Error, HttpRequest, HttpResponse};
+use actix_web::{Error, HttpResponse, web};
 use actix_web::web::{Json};
-use actix_service::ServiceFactory;
-use actix_web::dev::{MessageBody, ServiceRequest, ServiceResponse};
 
 use dao::{NewUser, User};
 
@@ -50,7 +47,7 @@ impl UserDTO {
     }
 }
 
-fn get_users(_req: &HttpRequest) -> Result<HttpResponse, Error> {
+async fn get_users() -> Result<HttpResponse, Error> {
     let users: Vec<UserDTO> = dao::get_users()
         .into_iter()
         .map(|u| UserDTO::from(u))
@@ -61,8 +58,8 @@ fn get_users(_req: &HttpRequest) -> Result<HttpResponse, Error> {
         .body(body))
 }
 
-fn get_user(req: &HttpRequest) -> Result<HttpResponse, Error> {
-    let id: i32 = req.match_info().query("id").parse().unwrap();
+async fn get_user(path: web::Path<String>) -> Result<HttpResponse, Error> {
+    let id: i32 = path.parse().unwrap();
     match dao::get_user(id) {
         Some(user) => {
             let body = serde_json::to_string(&UserDTO::from(user))?;
@@ -74,7 +71,7 @@ fn get_user(req: &HttpRequest) -> Result<HttpResponse, Error> {
     }
 }
 
-fn update_user(user_json: Json<UserDTO>) -> Result<HttpResponse, Error> {
+async fn update_user(user_json: Json<UserDTO>) -> Result<HttpResponse, Error> {
     let user = user_json.clone();
     let result = if let Some(id) = user.id {
         let mut existing_user = dao::get_user(id).unwrap();
@@ -96,7 +93,7 @@ fn update_user(user_json: Json<UserDTO>) -> Result<HttpResponse, Error> {
     }
 }
 
-fn get_user_template(_req: &HttpRequest) -> Result<HttpResponse, Error> {
+async fn get_user_template() -> Result<HttpResponse, Error> {
     let user = UserDTO {
         id: Some(1i32),
         username: Some("".to_string()),
@@ -109,23 +106,17 @@ fn get_user_template(_req: &HttpRequest) -> Result<HttpResponse, Error> {
         .body(body))
 }
 
-// TODO: replace by configure: https://docs.rs/actix-web/2.0.0/actix_web/struct.App.html#method.configure
-pub fn user_app(prefix: &str) -> App<
-    impl ServiceFactory<
-        Config = (),
-        Request = ServiceRequest,
-        Response = ServiceResponse<impl MessageBody>,
-        Error = Error,
-    >,
-    impl MessageBody,
-> {
-    App::new()
-        .prefix(prefix)
-        .resource("", |r| {
-            r.method(Method::GET).f(get_users);
-            r.method(Method::PUT).with(update_user);
-            r.method(Method::POST).with(update_user);
-        })
-        .resource("/template", |r| r.method(Method::GET).f(get_user_template))
-        .resource("{id}", |r| r.method(Method::GET).f(get_user))
+pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
+    cfg.service(web::resource(prefix)
+        .route(web::get().to(get_users))
+        .route(web::put().to(update_user))
+        .route(web::post().to(update_user))
+    );
+    cfg.service(web::resource(format!("{}{}", prefix, "/template"))
+        .route(web::get().to(get_user_template))
+    );
+    cfg.service(web::resource(format!("{}{}", prefix, "/{id}}"))
+        .route(web::get().to(get_user))
+    );
 }
+
