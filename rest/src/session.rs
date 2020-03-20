@@ -13,7 +13,7 @@ lazy_static! {
     static ref SESSIONS: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
 }
 
-pub fn is_login(req: ServiceRequest) -> Result<(), Error> {
+pub fn is_logged(req: ServiceRequest) -> Result<(), Error> {
     let session = req
         .cookie("session")
         .map_or("nothing".to_string(), |c| c.value().to_string());

@@ -36,7 +36,7 @@ pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
     );
 }
 
-pub fn start() {
+pub async fn start() -> std::io::Result<()> {
     info!("Start REST");
 
     HttpServer::new(||
@@ -46,7 +46,7 @@ pub fn start() {
                 .configure(|cfg| session::config(cfg, "/auth"))
                 .configure(|cfg| config(cfg, "/"))
         )
-        .bind("127.0.0.1:8088")
-        .unwrap()
-        .run();
+        .bind("127.0.0.1:8088")?
+        .run()
+        .await
 }
