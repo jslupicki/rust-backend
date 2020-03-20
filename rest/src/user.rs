@@ -1,8 +1,13 @@
+use actix_service::Service;
+use actix_web::dev::ServiceResponse;
+use actix_web::error::ErrorUnauthorized;
 use actix_web::error::{ErrorInternalServerError, ErrorNotFound};
-use actix_web::{Error, HttpResponse, web};
-use actix_web::web::{Json};
-
+use actix_web::middleware::Logger;
+use actix_web::web::Json;
+use actix_web::{web, Error, HttpResponse};
 use dao::{NewUser, User};
+
+use crate::session;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct UserDTO {
@@ -107,16 +112,22 @@ async fn get_user_template() -> Result<HttpResponse, Error> {
 }
 
 pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
-    cfg.service(web::resource(prefix)
-        .route(web::get().to(get_users))
-        .route(web::put().to(update_user))
-        .route(web::post().to(update_user))
+    cfg.service(
+        web::resource(prefix)
+            .wrap_fn(|req, srv| {
+                if session::is_logged(&req) {
+                    srv.call(req)
+                } else {
+                    // TODO: implement correct response when user is not logged.
+                    srv.call(req)
+                }
+            })
+            .route(web::get().to(get_users))
+            .route(web::put().to(update_user))
+            .route(web::post().to(update_user)),
     );
-    cfg.service(web::resource(format!("{}{}", prefix, "/template"))
-        .route(web::get().to(get_user_template))
+    cfg.service(
+        web::resource(format!("{}{}", prefix, "/template")).route(web::get().to(get_user_template)),
     );
-    cfg.service(web::resource(format!("{}{}", prefix, "/{id}}"))
-        .route(web::get().to(get_user))
-    );
+    cfg.service(web::resource(format!("{}{}", prefix, "/{id}}")).route(web::get().to(get_user)));
 }
-

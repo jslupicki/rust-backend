@@ -13,7 +13,7 @@ lazy_static! {
     static ref SESSIONS: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
 }
 
-pub fn is_logged(req: ServiceRequest) -> Result<(), Error> {
+pub fn is_logged(req: &ServiceRequest) -> bool {
     let session = req
         .cookie("session")
         .map_or("nothing".to_string(), |c| c.value().to_string());
@@ -24,17 +24,14 @@ pub fn is_logged(req: ServiceRequest) -> Result<(), Error> {
             session,
             username
         );
-        Ok(())
+        true
     } else {
         error!(
             "Unauthorized access to {} with session {}",
             req.path(),
             session
         );
-        Err(ErrorUnauthorized(format!(
-            "You are not authorized to access '{}'",
-            req.path()
-        )))
+        false
     }
 }
 
