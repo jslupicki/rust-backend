@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use actix_web::dev::ServiceRequest;
+use actix_web::dev::{ServiceRequest};
 use actix_web::error::ErrorUnauthorized;
 use actix_web::http::Cookie;
 use actix_web::web::Json;
-use actix_web::{Error, HttpMessage, HttpRequest, HttpResponse, web};
+use actix_web::{web, Error, HttpMessage, HttpRequest, HttpResponse};
 
 use uuid::Uuid;
 
@@ -93,13 +93,15 @@ async fn get_login_template() -> Result<HttpResponse, Error> {
 }
 
 pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
-    cfg.service(web::resource(prefix)
-        .route(web::post().to(login))
-        .route(web::delete().to(logout))
+    cfg.service(
+        web::resource(prefix)
+            .route(web::post().to(login))
+            .route(web::delete().to(logout)),
     );
-    cfg.service(web::resource(format!("{}{}", prefix, "/template"))
-        .route(web::get().to(get_login_template))
-    );    
+    cfg.service(
+        web::resource(format!("{}{}", prefix, "/template"))
+            .route(web::get().to(get_login_template)),
+    );
 }
 
 #[cfg(test)]

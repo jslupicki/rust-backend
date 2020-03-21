@@ -1,11 +1,11 @@
+use actix_http::Response;
 use actix_service::Service;
 use actix_web::dev::ServiceResponse;
-use actix_web::error::ErrorUnauthorized;
 use actix_web::error::{ErrorInternalServerError, ErrorNotFound};
-use actix_web::middleware::Logger;
 use actix_web::web::Json;
 use actix_web::{web, Error, HttpResponse};
 use dao::{NewUser, User};
+use futures::future::{ok, Either};
 
 use crate::session;
 
@@ -118,8 +118,11 @@ pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
                 if session::is_logged(&req) {
                     srv.call(req)
                 } else {
-                    // TODO: implement correct response when user is not logged.
-                    srv.call(req)
+                    let req = req.into_parts().0;
+                    Either::Left(ok(ServiceResponse::new(
+                        req,
+                        Response::Unauthorized().finish(),
+                    )))
                 }
             })
             .route(web::get().to(get_users))
@@ -127,7 +130,33 @@ pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
             .route(web::post().to(update_user)),
     );
     cfg.service(
-        web::resource(format!("{}{}", prefix, "/template")).route(web::get().to(get_user_template)),
+        web::resource(format!("{}{}", prefix, "/template"))
+            .wrap_fn(|req, srv| {
+                if session::is_logged(&req) {
+                    srv.call(req)
+                } else {
+                    let req = req.into_parts().0;
+                    Either::Left(ok(ServiceResponse::new(
+                        req,
+                        Response::Unauthorized().finish(),
+                    )))
+                }
+            })
+            .route(web::get().to(get_user_template)),
     );
-    cfg.service(web::resource(format!("{}{}", prefix, "/{id}}")).route(web::get().to(get_user)));
+    cfg.service(
+        web::resource(format!("{}{}", prefix, "/{id}}"))
+            .wrap_fn(|req, srv| {
+                if session::is_logged(&req) {
+                    srv.call(req)
+                } else {
+                    let req = req.into_parts().0;
+                    Either::Left(ok(ServiceResponse::new(
+                        req,
+                        Response::Unauthorized().finish(),
+                    )))
+                }
+            })
+            .route(web::get().to(get_user)),
+    );
 }

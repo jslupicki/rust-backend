@@ -1,7 +1,13 @@
-use actix_web::web::Json;
-use actix_web::{Error, HttpResponse, web};
 use chrono::NaiveDate;
 
+use actix_http::Response;
+use actix_service::Service;
+use actix_web::dev::ServiceResponse;
+use actix_web::web::Json;
+use actix_web::{web, Error, HttpResponse};
+use futures::future::{ok, Either};
+
+use crate::session;
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct SalaryDTO {
     id: Option<i32>,
@@ -62,15 +68,51 @@ async fn get_employee_template() -> Result<HttpResponse, Error> {
 }
 
 pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
-    cfg.service(web::resource(prefix)
-        .route(web::get().to(get_employees))
-        .route(web::put().to(update_employee))
-        .route(web::post().to(update_employee))
+    cfg.service(
+        web::resource(prefix)
+            .wrap_fn(|req, srv| {
+                if session::is_logged(&req) {
+                    srv.call(req)
+                } else {
+                    let req = req.into_parts().0;
+                    Either::Left(ok(ServiceResponse::new(
+                        req,
+                        Response::Unauthorized().finish(),
+                    )))
+                }
+            })
+            .route(web::get().to(get_employees))
+            .route(web::put().to(update_employee))
+            .route(web::post().to(update_employee)),
     );
-    cfg.service(web::resource(format!("{}{}", prefix, "/{id}}"))
-        .route(web::get().to(get_employee))
-    );    
-   cfg.service(web::resource(format!("{}{}", prefix, "/template"))
-        .route(web::get().to(get_employee_template))
-    );    
+    cfg.service(
+        web::resource(format!("{}{}", prefix, "/{id}}"))
+            .wrap_fn(|req, srv| {
+                if session::is_logged(&req) {
+                    srv.call(req)
+                } else {
+                    let req = req.into_parts().0;
+                    Either::Left(ok(ServiceResponse::new(
+                        req,
+                        Response::Unauthorized().finish(),
+                    )))
+                }
+            })
+            .route(web::get().to(get_employee)),
+    );
+    cfg.service(
+        web::resource(format!("{}{}", prefix, "/template"))
+            .wrap_fn(|req, srv| {
+                if session::is_logged(&req) {
+                    srv.call(req)
+                } else {
+                    let req = req.into_parts().0;
+                    Either::Left(ok(ServiceResponse::new(
+                        req,
+                        Response::Unauthorized().finish(),
+                    )))
+                }
+            })
+            .route(web::get().to(get_employee_template)),
+    );
 }
