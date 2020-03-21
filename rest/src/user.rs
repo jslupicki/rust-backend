@@ -4,8 +4,9 @@ use actix_web::dev::ServiceResponse;
 use actix_web::error::{ErrorInternalServerError, ErrorNotFound};
 use actix_web::web::Json;
 use actix_web::{web, Error, HttpResponse};
-use dao::{NewUser, User};
 use futures::future::{ok, Either};
+
+use dao::{NewUser, User};
 
 use crate::session;
 

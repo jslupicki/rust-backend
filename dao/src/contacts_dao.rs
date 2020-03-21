@@ -112,4 +112,3 @@ impl ContactDTO {
         self.persist_with_conn(conn)
     }
 }
-

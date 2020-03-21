@@ -1,13 +1,13 @@
-use chrono::NaiveDate;
-
 use actix_http::Response;
 use actix_service::Service;
 use actix_web::dev::ServiceResponse;
 use actix_web::web::Json;
 use actix_web::{web, Error, HttpResponse};
+use chrono::NaiveDate;
 use futures::future::{ok, Either};
 
 use crate::session;
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct SalaryDTO {
     id: Option<i32>,

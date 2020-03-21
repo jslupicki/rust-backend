@@ -1,5 +1,5 @@
-extern crate actix_web;
 extern crate actix_service;
+extern crate actix_web;
 extern crate cookie;
 extern crate dao;
 #[macro_use]
@@ -16,7 +16,7 @@ extern crate serde_json;
 extern crate uuid;
 
 use actix_web::http::Cookie;
-use actix_web::{App, Error, HttpResponse, HttpServer, web};
+use actix_web::{web, App, Error, HttpResponse, HttpServer};
 
 mod employee;
 mod session;
@@ -31,22 +31,20 @@ async fn index() -> Result<HttpResponse, Error> {
 }
 
 pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
-    cfg.service(web::resource(prefix)
-        .route(web::get().to(index))
-    );
+    cfg.service(web::resource(prefix).route(web::get().to(index)));
 }
 
 pub async fn start() -> std::io::Result<()> {
     info!("Start REST");
 
-    HttpServer::new(||
-            App::new()
-                .configure(|cfg| user::config(cfg, "/users"))
-                .configure(|cfg| employee::config(cfg, "/employees"))
-                .configure(|cfg| session::config(cfg, "/auth"))
-                .configure(|cfg| config(cfg, "/"))
-        )
-        .bind("127.0.0.1:8088")?
-        .run()
-        .await
+    HttpServer::new(|| {
+        App::new()
+            .configure(|cfg| user::config(cfg, "/users"))
+            .configure(|cfg| employee::config(cfg, "/employees"))
+            .configure(|cfg| session::config(cfg, "/auth"))
+            .configure(|cfg| config(cfg, "/"))
+    })
+    .bind("127.0.0.1:8088")?
+    .run()
+    .await
 }
