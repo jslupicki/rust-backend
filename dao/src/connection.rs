@@ -1,11 +1,10 @@
 use std::env;
 use std::io::stdout;
 
-use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use diesel_migrations::RunMigrationsError;
 use dotenv::dotenv;
-use r2d2::{Pool, PooledConnection};
+use r2d2::Pool;
 use r2d2_diesel::ConnectionManager;
 
 lazy_static! {

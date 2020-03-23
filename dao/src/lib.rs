@@ -28,8 +28,6 @@ mod common_for_tests;
 mod connection;
 mod employees_dao;
 mod models;
-#[cfg(test)]
-mod sandbox;
 mod schema;
 mod users_dao;
 mod salaries_dao;

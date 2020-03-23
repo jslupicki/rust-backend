@@ -1,16 +1,12 @@
 use std::collections::HashSet;
 
-use chrono::NaiveDate;
 use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
-use connection::POOL;
 use contacts_dao::ContactDTO;
-use models::{Contact, Employee, NewContact, NewEmployee, NewSalary, Salary};
+use models::{Employee, NewEmployee, NewSalary, Salary};
 use salaries_dao::SalaryDTO;
-use schema::contacts::dsl::id as contact_id;
-use schema::contacts::dsl::*;
 use schema::employees::dsl::id as employee_id;
 use schema::employees::dsl::*;
 use schema::salaries::dsl::id as salary_id;
@@ -83,6 +79,8 @@ pub fn get_salary(id_to_find: i32, conn: &SqliteConnection) -> Option<Salary> {
 
 #[cfg(test)]
 mod tests {
+    use chrono::NaiveDate;
+
     use base_dao::Crud;
     use common_for_tests::*;
 
@@ -124,7 +122,7 @@ mod tests {
             search_string: "different search string".to_string(),
         };
 
-        update_employee(&employee_to_update, conn);
+        update_employee(&employee_to_update, conn).unwrap();
 
         let updated_employee = get_employee(employee_to_update.id, conn).unwrap();
         assert_eq!(updated_employee.id, employee_to_update.id);

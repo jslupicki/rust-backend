@@ -4,7 +4,6 @@ use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
 use base_dao::Crud;
-use connection::POOL;
 use models::{NewSalary, Salary};
 use schema::salaries::dsl::id as salary_id;
 use schema::salaries::dsl::*;

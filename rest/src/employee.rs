@@ -53,7 +53,7 @@ async fn get_employee() -> Result<HttpResponse, Error> {
         .body(body))
 }
 
-async fn update_employee(employee_json: Json<EmployeeDTO>) -> Result<HttpResponse, Error> {
+async fn update_employee(_employee_json: Json<EmployeeDTO>) -> Result<HttpResponse, Error> {
     let body = "NOT YET IMPLEMENTED".to_string();
     Ok(HttpResponse::Ok()
         .content_type("application/json")
