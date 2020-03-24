@@ -3,11 +3,10 @@ use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
+use connection::get_connection;
 use models::{Contact, NewContact};
 use schema::contacts::dsl::id as contact_id;
 use schema::contacts::dsl::*;
-
-use connection::get_connection;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ContactDTO {

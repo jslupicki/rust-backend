@@ -19,19 +19,19 @@ extern crate sha3;
 
 use diesel::QueryResult;
 
-pub use connection::{initialize_db, get_connection};
+pub use connection::{get_connection, initialize_db};
 pub use models::*;
 
+mod base_dao;
 #[cfg(test)]
 mod common_for_tests;
 mod connection;
+mod contacts_dao;
 mod employees_dao;
 mod models;
+mod salaries_dao;
 mod schema;
 mod users_dao;
-mod salaries_dao;
-mod contacts_dao;
-mod base_dao;
 
 pub fn create_user(new_user: &NewUser) -> QueryResult<User> {
     let conn = get_connection();

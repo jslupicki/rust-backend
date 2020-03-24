@@ -1,5 +1,6 @@
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
+
 use connection::get_connection;
 
 pub trait Crud<T>

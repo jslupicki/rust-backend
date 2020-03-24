@@ -175,14 +175,14 @@ mod tests {
         };
         let rows_inserted = insert_into(users).values(&new_user).execute(conn);
         match rows_inserted {
-                Err(DatabaseError(UniqueViolation, msg)) => {
-                    assert_eq!(msg.message(), "UNIQUE constraint failed: users.username")
-                }
-                _ => assert!(
-                    false,
-                    format!("Should report: UNIQUE constraint failed: users.username and instead I got {:?}", rows_inserted)
-                ),
+            Err(DatabaseError(UniqueViolation, msg)) => {
+                assert_eq!(msg.message(), "UNIQUE constraint failed: users.username")
             }
+            _ => assert!(
+                false,
+                format!("Should report: UNIQUE constraint failed: users.username and instead I got {:?}", rows_inserted)
+            ),
+        }
     }
 
     #[test]
