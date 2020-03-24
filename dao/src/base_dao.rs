@@ -1,7 +1,6 @@
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
-
-use connection::POOL;
+use connection::get_connection;
 
 pub trait Crud<T>
 where
@@ -33,17 +32,17 @@ where
     }
 
     fn get(id_to_find: i32) -> Option<Self> {
-        let conn: &SqliteConnection = &POOL.get().unwrap();
+        let conn: &SqliteConnection = &get_connection();
         Self::get_with_conn(id_to_find, conn)
     }
 
     fn save(&self) -> Option<Self> {
-        let conn: &SqliteConnection = &POOL.get().unwrap();
+        let conn: &SqliteConnection = &get_connection();
         self.save_in_transaction(conn)
     }
 
     fn persist(&mut self) -> Option<Self> {
-        let conn: &SqliteConnection = &POOL.get().unwrap();
+        let conn: &SqliteConnection = &get_connection();
         self.persist_in_transaction(conn)
     }
 }

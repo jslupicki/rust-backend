@@ -3,10 +3,11 @@ use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
-use connection::POOL;
 use models::{Contact, NewContact};
 use schema::contacts::dsl::id as contact_id;
 use schema::contacts::dsl::*;
+
+use connection::get_connection;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ContactDTO {
@@ -71,7 +72,7 @@ impl ContactDTO {
     }
 
     fn get(id_to_find: i32) -> Option<Self> {
-        let conn: &SqliteConnection = &POOL.get().unwrap();
+        let conn: &SqliteConnection = &get_connection();
         Self::get_with_conn(id_to_find, conn)
     }
 
@@ -96,7 +97,7 @@ impl ContactDTO {
     }
 
     fn save(&self) -> Option<Self> {
-        let conn: &SqliteConnection = &POOL.get().unwrap();
+        let conn: &SqliteConnection = &get_connection();
         self.save_with_conn(conn)
     }
 
@@ -108,7 +109,7 @@ impl ContactDTO {
     }
 
     fn persist(&mut self) -> Option<Self> {
-        let conn: &SqliteConnection = &POOL.get().unwrap();
+        let conn: &SqliteConnection = &get_connection();
         self.persist_with_conn(conn)
     }
 }

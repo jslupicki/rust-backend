@@ -8,7 +8,7 @@ use r2d2::Pool;
 use r2d2_diesel::ConnectionManager;
 
 lazy_static! {
-    pub static ref POOL: Pool<ConnectionManager<SqliteConnection>> = create_connection_pool();
+    static ref POOL: Pool<ConnectionManager<SqliteConnection>> = create_connection_pool();
 }
 
 embed_migrations!("./migrations");
@@ -31,7 +31,11 @@ fn create_connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
 }
 
 pub fn initialize_db() -> Result<(), RunMigrationsError> {
-    let conn: &SqliteConnection = &POOL.get().unwrap();
+    let conn: &SqliteConnection = &get_connection();
     info!("Initialize DB (if not exist), run migrations");
     embedded_migrations::run_with_output(conn, &mut stdout())
+}
+
+pub fn get_connection() -> r2d2::PooledConnection<ConnectionManager<SqliteConnection>> {
+    POOL.get().unwrap()
 }

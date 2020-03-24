@@ -19,8 +19,7 @@ extern crate sha3;
 
 use diesel::QueryResult;
 
-pub use connection::initialize_db;
-use connection::POOL;
+pub use connection::{initialize_db, get_connection};
 pub use models::*;
 
 #[cfg(test)]
@@ -35,26 +34,26 @@ mod contacts_dao;
 mod base_dao;
 
 pub fn create_user(new_user: &NewUser) -> QueryResult<User> {
-    let conn = POOL.get().unwrap();
+    let conn = get_connection();
     users_dao::create_user(new_user, &conn)
 }
 
 pub fn update_user(user: &User) -> QueryResult<User> {
-    let conn = POOL.get().unwrap();
+    let conn = get_connection();
     users_dao::update_user(user, &conn)
 }
 
 pub fn get_users() -> Vec<User> {
-    let conn = POOL.get().unwrap();
+    let conn = get_connection();
     users_dao::get_users(&conn)
 }
 
 pub fn get_user(id: i32) -> Option<User> {
-    let conn = POOL.get().unwrap();
+    let conn = get_connection();
     users_dao::get_user(id, &conn)
 }
 
 pub fn validate_user(username: &String, password: &String) -> bool {
-    let conn = POOL.get().unwrap();
+    let conn = get_connection();
     users_dao::validate_user(username, password, &conn)
 }

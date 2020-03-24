@@ -60,10 +60,8 @@ mod tests {
     use diesel;
     use diesel::result::DatabaseErrorKind::UniqueViolation;
     use diesel::result::Error::DatabaseError;
-    use log4rs;
 
     use common_for_tests::*;
-    use connection::POOL;
 
     use super::*;
 
