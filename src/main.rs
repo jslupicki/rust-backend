@@ -3,6 +3,7 @@ extern crate dao;
 extern crate log;
 extern crate log4rs;
 extern crate rest;
+#[cfg(test)]
 #[macro_use]
 extern crate lazy_static;
 
