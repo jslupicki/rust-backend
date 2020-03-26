@@ -6,6 +6,12 @@ extern crate rest;
 #[cfg(test)]
 #[macro_use]
 extern crate lazy_static;
+#[cfg(test)]
+#[macro_use]
+extern crate diesel;
+#[cfg(test)]
+#[macro_use]
+extern crate diesel_migrations;
 
 #[actix_rt::main]
 pub async fn main() -> std::io::Result<()> {
@@ -18,7 +24,8 @@ pub async fn main() -> std::io::Result<()> {
 
 #[cfg(test)]
 mod tests {
-   
+    use diesel::sqlite::SqliteConnection;
+    use diesel_migrations;
     use super::*;
     use std::sync::Mutex;
     use std::{thread, time};
@@ -59,5 +66,17 @@ mod tests {
             thread::sleep(timeout);
         }
         info!("End of {}", name);
+    }
+
+    fn revert_all_migrations(conn: &SqliteConnection) {
+        loop {
+            match diesel_migrations::revert_latest_migration(conn) {
+                Ok(migration) => info!("Reverted {}", migration),
+                Err(_) => {
+                    info!("Reverted all migrations");
+                    break;
+                }
+            };
+        }
     }
 }
