@@ -1,10 +1,8 @@
-#[cfg(not(test))]
 use std::env;
 use std::io::stdout;
 
 use diesel::sqlite::SqliteConnection;
 use diesel_migrations::RunMigrationsError;
-#[cfg(not(test))]
 use dotenv::dotenv;
 use r2d2::Pool;
 use r2d2_diesel::ConnectionManager;
@@ -13,9 +11,8 @@ lazy_static! {
     static ref POOL: Pool<ConnectionManager<SqliteConnection>> = create_connection_pool();
 }
 
-embed_migrations!("./migrations");
+embed_migrations!("../migrations");
 
-#[cfg(not(test))]
 fn create_connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
     dotenv().ok();
     let database_url = match env::var("DATABASE_URL") {
@@ -26,18 +23,7 @@ fn create_connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
         Ok(pool_size) => pool_size.parse::<u32>().unwrap(),
         Err(_) => 1,
     };
-    create_connection_pool_from_parameters(database_url, pool_size)
-}
-
-#[cfg(test)]
-fn create_connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
-    create_connection_pool_from_parameters(String::from(":memory:"), 1)
-}
-
-fn create_connection_pool_from_parameters(
-    database_url: String,
-    pool_size: u32,
-) -> Pool<ConnectionManager<SqliteConnection>> {
+    info!("Initialize connection pool with DATABASE_URL='{}', POOL_SIZE='{}'", database_url, pool_size);
     let manager = ConnectionManager::<SqliteConnection>::new(database_url);
     Pool::builder()
         .max_size(pool_size)

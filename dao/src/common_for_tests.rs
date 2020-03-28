@@ -12,7 +12,7 @@ use schema::users::dsl::*;
 
 static TEST_DB_NAME: &str = ":memory:";
 
-embed_migrations!("./migrations");
+embed_migrations!("../migrations");
 
 pub fn initialize_log() {
     let _ = log4rs::init_file("log4rs.yml", Default::default());

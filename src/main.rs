@@ -29,27 +29,29 @@ mod tests {
     use super::*;
     use std::sync::Mutex;
     use std::{thread, time};
+    use dao::{get_connection, initialize_db};
+    use std::env;
 
     lazy_static! {
         static ref MUTEX: Mutex<i32> = Mutex::new(0i32);
     }
 
     #[test]
-    fn test1() {
+    fn integration_test1() {
         initialize_log();
-        perform_test("Test1");
+        perform_test("Integration Test1");
     }
 
     #[test]
-    fn test2() {
+    fn integration_test2() {
         initialize_log();
-        perform_test("Test2");
+        perform_test("Integration Test2");
     }
 
     #[test]
-    fn test3() {
+    fn integration_test3() {
         initialize_log();
-        perform_test("Test3");
+        perform_test("Integration Test3");
     }
 
     fn initialize_log() {
@@ -60,20 +62,30 @@ mod tests {
     fn perform_test(name: &str) {
         info!("Start {}", name);
         let lock = MUTEX.lock();
+        setup_db();
         let timeout = time::Duration::from_millis(200);
         for i in 1..10 {
             debug!("In {}: {}", name, i);
             thread::sleep(timeout);
         }
+        tear_down_db();
         info!("End of {}", name);
     }
 
-    fn revert_all_migrations(conn: &SqliteConnection) {
+    fn setup_db() {
+        info!("Initialize DB (if not exist), run migrations");
+        env::set_var("DATABASE_URL", ":memory:");
+        env::set_var("POOL_SIZE", "1");
+        initialize_db().unwrap();    
+    }
+
+    fn tear_down_db() {
+        let conn: &SqliteConnection = &get_connection();
         loop {
             match diesel_migrations::revert_latest_migration(conn) {
                 Ok(migration) => info!("Reverted {}", migration),
-                Err(_) => {
-                    info!("Reverted all migrations");
+                Err(e) => {
+                    info!("Reverted all migrations: {}", e);
                     break;
                 }
             };
