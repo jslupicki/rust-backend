@@ -1,17 +1,17 @@
 extern crate dao;
-#[macro_use]
-extern crate log;
-extern crate log4rs;
-extern crate rest;
-#[cfg(test)]
-#[macro_use]
-extern crate lazy_static;
 #[cfg(test)]
 #[macro_use]
 extern crate diesel;
 #[cfg(test)]
 #[macro_use]
 extern crate diesel_migrations;
+#[cfg(test)]
+#[macro_use]
+extern crate lazy_static;
+#[macro_use]
+extern crate log;
+extern crate log4rs;
+extern crate rest;
 
 #[actix_rt::main]
 pub async fn main() -> std::io::Result<()> {
@@ -24,22 +24,41 @@ pub async fn main() -> std::io::Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use diesel::sqlite::SqliteConnection;
-    use diesel_migrations;
-    use super::*;
+    use std::env;
     use std::sync::Mutex;
     use std::{thread, time};
+
+    use actix_web::{test, web, App};
+    use bytes::Bytes;
+    use diesel::sqlite::SqliteConnection;
+    use diesel_migrations;
+
     use dao::{get_connection, initialize_db};
-    use std::env;
+    use rest;
+
+    use super::*;
 
     lazy_static! {
         static ref MUTEX: Mutex<i32> = Mutex::new(0i32);
     }
 
-    #[test]
-    fn integration_test1() {
+    #[actix_rt::test]
+    async fn call_to_index_should_return_hello_world() {
+        let lock = MUTEX.lock();
         initialize_log();
-        perform_test("Integration Test1");
+        setup_db();
+
+        info!("Start call_to_index_should_return_hello_world() test");
+        let mut app = test::init_service(App::new().configure(|cfg| rest::config_all(cfg))).await;
+        let req = test::TestRequest::with_header("content-type", "text/plain").to_request();
+        let resp = test::call_service(&mut app, req).await;
+        info!("End call_to_index_should_return_hello_world() test");
+
+        tear_down_db();
+
+        assert!(resp.status().is_success());
+        let result = test::read_body(resp).await;
+        assert_eq!(result, Bytes::from_static(b"Hello world"));
     }
 
     #[test]
@@ -76,7 +95,7 @@ mod tests {
         info!("Initialize DB (if not exist), run migrations");
         env::set_var("DATABASE_URL", ":memory:");
         env::set_var("POOL_SIZE", "1");
-        initialize_db().unwrap();    
+        initialize_db().unwrap();
     }
 
     fn tear_down_db() {

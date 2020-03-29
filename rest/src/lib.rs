@@ -34,17 +34,18 @@ pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
     cfg.service(web::resource(prefix).route(web::get().to(index)));
 }
 
+pub fn config_all(cfg: &mut web::ServiceConfig) {
+    user::config(cfg, "/users");
+    employee::config(cfg, "/employees");
+    session::config(cfg, "/auth");
+    config(cfg, "/");
+}
+
 pub async fn start() -> std::io::Result<()> {
     info!("Start REST");
 
-    HttpServer::new(|| {
-        App::new()
-            .configure(|cfg| user::config(cfg, "/users"))
-            .configure(|cfg| employee::config(cfg, "/employees"))
-            .configure(|cfg| session::config(cfg, "/auth"))
-            .configure(|cfg| config(cfg, "/"))
-    })
-    .bind("127.0.0.1:8088")?
-    .run()
-    .await
+    HttpServer::new(|| App::new().configure(|cfg| config_all(cfg)))
+        .bind("127.0.0.1:8088")?
+        .run()
+        .await
 }

@@ -86,7 +86,7 @@ pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
             .route(web::post().to(update_employee)),
     );
     cfg.service(
-        web::resource(format!("{}{}", prefix, "/{id}}"))
+        web::resource(format!("{}{}", prefix, "/{id}"))
             .wrap_fn(|req, srv| {
                 if session::is_logged(&req) {
                     srv.call(req)

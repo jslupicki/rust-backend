@@ -56,7 +56,7 @@ Content-Type: application/json
 Cookie: {{current_session}}
 
 {
-  "id": 2,
+  "id": 1,
   "username": "user2",
   "password": "user2_pw",
   "is_admin": true
