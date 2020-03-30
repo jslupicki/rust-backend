@@ -35,9 +35,9 @@ pub fn is_logged(req: &ServiceRequest) -> bool {
 }
 
 #[derive(Serialize, Deserialize)]
-struct LoginDTO {
-    username: String,
-    password: String,
+pub struct LoginDTO {
+    pub username: String,
+    pub password: String,
 }
 
 async fn login(body: Json<LoginDTO>) -> Result<HttpResponse, Error> {
