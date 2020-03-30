@@ -28,17 +28,17 @@ mod tests {
     use std::sync::Mutex;
     use std::{thread, time};
 
-    use actix_web::{test, App};
     use actix_web::dev::ServiceResponse;
+    use actix_web::{test, App};
     use bytes::Bytes;
     use diesel::sqlite::SqliteConnection;
     use diesel_migrations;
 
+    use actix_http::http::{Cookie, StatusCode};
+    use actix_http::Request;
+    use actix_service::Service;
     use dao::{get_connection, initialize_db};
     use rest::LoginDTO;
-    use actix_http::http::StatusCode;
-    use actix_http::Request;
-    use actix_service::{Service};
 
     use super::*;
 
@@ -101,9 +101,7 @@ mod tests {
         let mut app = test::init_service(App::new().configure(|cfg| rest::config_all(cfg))).await;
         let credentials = LoginDTO {
             username: String::from("admin"),
-            password: String::from(
-                "wrong password",
-            ),
+            password: String::from("wrong password"),
         };
         let req = test::TestRequest::post()
             .uri("/auth")
@@ -127,7 +125,12 @@ mod tests {
         setup_db();
 
         let mut app = test::init_service(App::new().configure(|cfg| rest::config_all(cfg))).await;
-        let session = login("admin", "fb001dfcffd1c899f3297871406242f097aecf1a5342ccf3ebcd116146188e4b", &mut app).await;
+        let session = login(
+            "admin",
+            "fb001dfcffd1c899f3297871406242f097aecf1a5342ccf3ebcd116146188e4b",
+            &mut app,
+        )
+        .await;
 
         tear_down_db();
 
@@ -162,8 +165,8 @@ mod tests {
         }
     }
 
-    async fn login<S, B, E>(username: &str, password: &str, app: &mut S) -> Option<String> 
-    where 
+    async fn login<S, B, E>(username: &str, password: &str, app: &mut S) -> Option<Cookie<'static>>
+    where
         S: Service<Request = Request, Response = ServiceResponse<B>, Error = E>,
         E: std::fmt::Debug,
     {
@@ -176,11 +179,9 @@ mod tests {
             .set_json(&credentials)
             .to_request();
         let resp = test::call_service(app, req).await;
-        let session = resp.response().cookies().find(|c| c.name() == "session");
-        if let Some(session) = session {
-            Some(String::from(session.value()))
-        } else {
-            None
-        }
+        resp.response()
+            .cookies()
+            .find(|c| c.name() == "session")
+            .map(|c| c.into_owned())
     }
 }
