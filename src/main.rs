@@ -115,32 +115,31 @@ mod tests {
         tear_down_db();
 
         assert_eq!(StatusCode::UNAUTHORIZED, resp.status());
-        assert!(!session.is_some());
+        assert!(session.is_none());
         info!("End login_with_incorrect_credentials() test");
     }
 
-    #[test]
-    fn integration_test3() {
+    #[actix_rt::test]
+    async fn integration_test3() {
         let lock = MUTEX.lock();
         initialize_log();
-        perform_test("Integration Test3");
+        info!("Start integration_test3() test");
+        setup_db();
+
+        let mut app = test::init_service(App::new().configure(|cfg| rest::config_all(cfg))).await;
+        let session = login("admin", "fb001dfcffd1c899f3297871406242f097aecf1a5342ccf3ebcd116146188e4b", &mut app).await;
+
+        tear_down_db();
+
+        assert!(session.is_some());
+        if let Some(s) = session {
+            info!("Got session: {}", s);
+        }
+        info!("End integration_test3() test");
     }
 
     fn initialize_log() {
         let _ = log4rs::init_file("log4rs.yml", Default::default());
-    }
-
-    #[allow(unused_variables)]
-    fn perform_test(name: &str) {
-        info!("Start {}", name);
-        setup_db();
-        let timeout = time::Duration::from_millis(200);
-        for i in 1..10 {
-            debug!("In {}: {}", name, i);
-            thread::sleep(timeout);
-        }
-        tear_down_db();
-        info!("End of {}", name);
     }
 
     fn setup_db() {
