@@ -12,6 +12,8 @@ extern crate lazy_static;
 extern crate log;
 extern crate log4rs;
 extern crate rest;
+#[macro_use]
+extern crate scopeguard;
 
 #[actix_rt::main]
 pub async fn main() -> std::io::Result<()> {
@@ -23,10 +25,13 @@ pub async fn main() -> std::io::Result<()> {
 }
 
 #[cfg(test)]
+mod test_data;
+
+#[cfg(test)]
 mod tests {
+
     use std::env;
     use std::sync::Mutex;
-    use std::{thread, time};
 
     use actix_web::dev::ServiceResponse;
     use actix_web::{test, App};
@@ -35,10 +40,11 @@ mod tests {
     use diesel_migrations;
 
     use actix_http::http::{Cookie, StatusCode};
-    use actix_http::Request;
+    use actix_http::{Request};
     use actix_service::Service;
     use dao::{get_connection, initialize_db};
     use rest::LoginDTO;
+    use test_data::URLS;
 
     use super::*;
 
@@ -52,16 +58,19 @@ mod tests {
         initialize_log();
         info!("Start call_to_index_should_return_hello_world() test");
         setup_db();
+        defer! { 
+            tear_down_db(); 
+            info!("End call_to_index_should_return_hello_world() test");
+        }
 
         let mut app = test::init_service(App::new().configure(|cfg| rest::config_all(cfg))).await;
         let req = test::TestRequest::with_header("content-type", "text/plain").to_request();
         let resp = test::call_service(&mut app, req).await;
-        tear_down_db();
+
         assert!(resp.status().is_success());
         let result = test::read_body(resp).await;
         assert_eq!(result, Bytes::from_static(b"Hello world"));
-        info!("End call_to_index_should_return_hello_world() test");
-    }
+   }
 
     #[actix_rt::test]
     async fn login_with_correct_credentials() {
@@ -69,6 +78,10 @@ mod tests {
         initialize_log();
         info!("Start login_with_correct_credentials() test");
         setup_db();
+        defer! { 
+            tear_down_db(); 
+            info!("End login_with_correct_credentials() test");
+        }
 
         let mut app = test::init_service(App::new().configure(|cfg| rest::config_all(cfg))).await;
         let credentials = LoginDTO {
@@ -84,11 +97,8 @@ mod tests {
         let resp = test::call_service(&mut app, req).await;
         let session = resp.response().cookies().find(|c| c.name() == "session");
 
-        tear_down_db();
-
         assert!(resp.status().is_success());
         assert!(session.is_some());
-        info!("End login_with_correct_credentials() test");
     }
 
     #[actix_rt::test]
@@ -97,6 +107,10 @@ mod tests {
         initialize_log();
         info!("Start login_with_incorrect_credentials() test");
         setup_db();
+        defer! { 
+            tear_down_db(); 
+            info!("End login_with_incorrect_credentials() test");
+        }
 
         let mut app = test::init_service(App::new().configure(|cfg| rest::config_all(cfg))).await;
         let credentials = LoginDTO {
@@ -110,20 +124,21 @@ mod tests {
         let resp = test::call_service(&mut app, req).await;
         let session = resp.response().cookies().find(|c| c.name() == "session");
 
-        tear_down_db();
-
         assert_eq!(StatusCode::UNAUTHORIZED, resp.status());
         assert!(session.is_none());
-        info!("End login_with_incorrect_credentials() test");
     }
 
     #[actix_rt::test]
-    async fn integration_test3() {
+    async fn check_access_control() {
         let lock = MUTEX.lock();
         initialize_log();
-        info!("Start integration_test3() test");
+        info!("Start check_access_control() test");
         setup_db();
-
+        defer! { 
+            tear_down_db(); 
+            info!("End check_access_control() test");
+        }
+ 
         let mut app = test::init_service(App::new().configure(|cfg| rest::config_all(cfg))).await;
         let session = login(
             "admin",
@@ -132,14 +147,36 @@ mod tests {
         )
         .await;
 
-        tear_down_db();
-
         assert!(session.is_some());
-        if let Some(s) = session {
-            info!("Got session: {}", s);
+        if let Some(session) = session {
+            info!("Got session: {}", session);
+            for url in &*URLS {
+                debug!("Checking {:#?}", url);
+                let req_without_session = test::TestRequest::get()
+                    .uri(url.url)
+                    .method(url.method.clone())
+                    .to_request();
+                let req_with_session = test::TestRequest::get()
+                    .uri(url.url)
+                    .method(url.method.clone())
+                    .cookie(session.clone())
+                    .to_request();
+                let resp_without_session = test::call_service(&mut app, req_without_session).await;
+                let resp_with_session = test::call_service(&mut app, req_with_session).await;
+                if url.guarded {
+                    assert_eq!(StatusCode::UNAUTHORIZED, resp_without_session.status(), 
+                    "Call {:#?} without session should respond with UNAUTHORIZED", url);
+                    assert_ne!(StatusCode::UNAUTHORIZED, resp_with_session.status(), 
+                    "Call {:#?} with session should NOT respond with UNAUTHORIZED", url);
+                } else {
+                    assert_ne!(StatusCode::UNAUTHORIZED, resp_without_session.status(), 
+                    "Call {:#?} without session should NOT respond with UNAUTHORIZED", url);
+                    assert_ne!(StatusCode::UNAUTHORIZED, resp_with_session.status(), 
+                    "Call {:#?} with session should NOT respond with UNAUTHORIZED", url);
+                }
+            }
         }
-        info!("End integration_test3() test");
-    }
+     }
 
     fn initialize_log() {
         let _ = log4rs::init_file("log4rs.yml", Default::default());
