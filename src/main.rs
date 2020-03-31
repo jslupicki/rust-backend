@@ -12,6 +12,7 @@ extern crate lazy_static;
 extern crate log;
 extern crate log4rs;
 extern crate rest;
+#[cfg(test)]
 #[macro_use]
 extern crate scopeguard;
 
@@ -29,19 +30,18 @@ mod test_data;
 
 #[cfg(test)]
 mod tests {
-
     use std::env;
     use std::sync::Mutex;
 
+    use actix_http::http::{Cookie, StatusCode};
+    use actix_http::Request;
+    use actix_service::Service;
     use actix_web::dev::ServiceResponse;
     use actix_web::{test, App};
     use bytes::Bytes;
     use diesel::sqlite::SqliteConnection;
     use diesel_migrations;
 
-    use actix_http::http::{Cookie, StatusCode};
-    use actix_http::{Request};
-    use actix_service::Service;
     use dao::{get_connection, initialize_db};
     use rest::LoginDTO;
     use test_data::URLS;
@@ -58,8 +58,8 @@ mod tests {
         initialize_log();
         info!("Start call_to_index_should_return_hello_world() test");
         setup_db();
-        defer! { 
-            tear_down_db(); 
+        defer! {
+            tear_down_db();
             info!("End call_to_index_should_return_hello_world() test");
         }
 
@@ -70,7 +70,7 @@ mod tests {
         assert!(resp.status().is_success());
         let result = test::read_body(resp).await;
         assert_eq!(result, Bytes::from_static(b"Hello world"));
-   }
+    }
 
     #[actix_rt::test]
     async fn login_with_correct_credentials() {
@@ -78,8 +78,8 @@ mod tests {
         initialize_log();
         info!("Start login_with_correct_credentials() test");
         setup_db();
-        defer! { 
-            tear_down_db(); 
+        defer! {
+            tear_down_db();
             info!("End login_with_correct_credentials() test");
         }
 
@@ -107,8 +107,8 @@ mod tests {
         initialize_log();
         info!("Start login_with_incorrect_credentials() test");
         setup_db();
-        defer! { 
-            tear_down_db(); 
+        defer! {
+            tear_down_db();
             info!("End login_with_incorrect_credentials() test");
         }
 
@@ -134,11 +134,11 @@ mod tests {
         initialize_log();
         info!("Start check_access_control() test");
         setup_db();
-        defer! { 
-            tear_down_db(); 
+        defer! {
+            tear_down_db();
             info!("End check_access_control() test");
         }
- 
+
         let mut app = test::init_service(App::new().configure(|cfg| rest::config_all(cfg))).await;
         let session = login(
             "admin",
@@ -164,19 +164,35 @@ mod tests {
                 let resp_without_session = test::call_service(&mut app, req_without_session).await;
                 let resp_with_session = test::call_service(&mut app, req_with_session).await;
                 if url.guarded {
-                    assert_eq!(StatusCode::UNAUTHORIZED, resp_without_session.status(), 
-                    "Call {:#?} without session should respond with UNAUTHORIZED", url);
-                    assert_ne!(StatusCode::UNAUTHORIZED, resp_with_session.status(), 
-                    "Call {:#?} with session should NOT respond with UNAUTHORIZED", url);
+                    assert_eq!(
+                        StatusCode::UNAUTHORIZED,
+                        resp_without_session.status(),
+                        "Call {:#?} without session should respond with UNAUTHORIZED",
+                        url
+                    );
+                    assert_ne!(
+                        StatusCode::UNAUTHORIZED,
+                        resp_with_session.status(),
+                        "Call {:#?} with session should NOT respond with UNAUTHORIZED",
+                        url
+                    );
                 } else {
-                    assert_ne!(StatusCode::UNAUTHORIZED, resp_without_session.status(), 
-                    "Call {:#?} without session should NOT respond with UNAUTHORIZED", url);
-                    assert_ne!(StatusCode::UNAUTHORIZED, resp_with_session.status(), 
-                    "Call {:#?} with session should NOT respond with UNAUTHORIZED", url);
+                    assert_ne!(
+                        StatusCode::UNAUTHORIZED,
+                        resp_without_session.status(),
+                        "Call {:#?} without session should NOT respond with UNAUTHORIZED",
+                        url
+                    );
+                    assert_ne!(
+                        StatusCode::UNAUTHORIZED,
+                        resp_with_session.status(),
+                        "Call {:#?} with session should NOT respond with UNAUTHORIZED",
+                        url
+                    );
                 }
             }
         }
-     }
+    }
 
     fn initialize_log() {
         let _ = log4rs::init_file("log4rs.yml", Default::default());
