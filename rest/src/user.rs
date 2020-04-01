@@ -116,6 +116,7 @@ pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
     cfg.service(
         web::resource(prefix)
             .wrap_fn(|req, srv| {
+                info!("Checking /users/");
                 if session::is_logged(&req) {
                     srv.call(req)
                 } else {
@@ -132,6 +133,8 @@ pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/template"))
+            .guard(session::LoginGuard)
+/*
             .wrap_fn(|req, srv| {
                 if session::is_logged(&req) {
                     srv.call(req)
@@ -143,11 +146,13 @@ pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
                     )))
                 }
             })
+*/            
             .route(web::get().to(get_user_template)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/{id}"))
             .wrap_fn(|req, srv| {
+                info!("Checking /users/id");
                 if session::is_logged(&req) {
                     srv.call(req)
                 } else {

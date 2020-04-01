@@ -1,7 +1,7 @@
 use std::env;
 use std::sync::Mutex;
 
-use actix_http::http::{Cookie, StatusCode};
+use actix_http::http::{Cookie, StatusCode, Method};
 use actix_http::Request;
 use actix_service::Service;
 use actix_web::dev::ServiceResponse;
@@ -9,7 +9,6 @@ use actix_web::{test, App};
 use bytes::Bytes;
 use diesel::sqlite::SqliteConnection;
 use diesel_migrations;
-
 use dao::{get_connection, initialize_db};
 use rest::LoginDTO;
 
@@ -156,6 +155,38 @@ async fn check_access_control() {
                 );
             }
         }
+    }
+}
+
+#[actix_rt::test]
+async fn check_login_guard() {
+    let lock = MUTEX.lock();
+    initialize_log();
+    info!("Start check_login_guard() test");
+    setup_db();
+    defer! {
+        tear_down_db();
+        info!("End check_login_guard() test");
+    }
+
+    let mut app = test::init_service(App::new().configure(|cfg| rest::config_all(cfg))).await;
+    let session = login(
+        "admin",
+        "fb001dfcffd1c899f3297871406242f097aecf1a5342ccf3ebcd116146188e4b",
+        &mut app,
+    )
+    .await;
+
+    assert!(session.is_some());
+    if let Some(session) = session {
+        info!("Got session: {}", session);
+        let req = test::TestRequest::get()
+            .uri("/users/template")
+            .method(Method::GET)
+            //.cookie(session.clone())
+            .to_request();
+        let resp = test::call_service(&mut app, req).await;
+        info!("GET /users/template => {:#?}", resp.status());
     }
 }
 

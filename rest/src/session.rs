@@ -6,10 +6,58 @@ use actix_web::error::ErrorUnauthorized;
 use actix_web::http::Cookie;
 use actix_web::web::Json;
 use actix_web::{web, Error, HttpMessage, HttpRequest, HttpResponse};
+use actix_web::guard::Guard;
+use actix_http::RequestHead;
+
 use uuid::Uuid;
 
 lazy_static! {
     static ref SESSIONS: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
+}
+pub struct LoginGuard;
+
+impl Guard for LoginGuard {
+    fn check(&self, req: &RequestHead) -> bool {
+        match req.headers().get("cookie") {
+            Some(cookies) => {
+                info!("LoginGuard: I find cookies in header: {:#?}", cookies);
+                match cookies.to_str() {
+                    Ok(cookies_as_str) => {
+                        let cookies_vec: Vec<&str> = cookies_as_str.split(";").collect();
+                        let session = cookies_vec.iter()
+                            .map(|c| Cookie::parse(c.trim()))
+                            .find(|c| match c {
+                                Ok(c) => c.name().eq("session"),
+                                Err(_) => false,
+                            })
+                            .map_or("nothing".to_string(), |c| c.unwrap().value().to_string())
+                            ;
+                        if let Some(username) = SESSIONS.lock().unwrap().get(&session) {
+                            info!(
+                                "LoginGuard: Allow access to {} with session {} for user {}",
+                                req.uri,
+                                session,
+                                username
+                            );
+                            return true;                    
+                        } else {
+                            error!(
+                                "LoginGuard: Unauthorized access to {} with session {}",
+                                req.uri,
+                                session
+                            );
+                            return false;                                            
+                        }
+                    },
+                    Err(_) => return false,
+                }
+            },
+            None => {
+                info!("LoginGuard: I can't find cookies in header - reject access to {}", req.uri);
+                return false;
+            },
+        };
+    }
 }
 
 pub fn is_logged(req: &ServiceRequest) -> bool {
