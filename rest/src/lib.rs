@@ -18,8 +18,9 @@ extern crate uuid;
 use actix_web::http::Cookie;
 use actix_web::{web, App, Error, HttpResponse, HttpServer};
 
-mod employee;
+#[macro_use]
 mod session;
+mod employee;
 mod user;
 
 pub use session::LoginDTO;

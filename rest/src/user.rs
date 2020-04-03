@@ -1,6 +1,6 @@
 use actix_http::Response;
-use actix_service::Service;
-use actix_web::dev::ServiceResponse;
+use actix_service::{Service};
+use actix_web::dev::{ServiceResponse};
 use actix_web::error::{ErrorInternalServerError, ErrorNotFound};
 use actix_web::web::Json;
 use actix_web::{web, Error, HttpResponse};
@@ -115,54 +115,19 @@ async fn get_user_template() -> Result<HttpResponse, Error> {
 pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
     cfg.service(
         web::resource(prefix)
-            .wrap_fn(|req, srv| {
-                info!("Checking /users/");
-                if session::is_logged(&req) {
-                    srv.call(req)
-                } else {
-                    let req = req.into_parts().0;
-                    Either::Left(ok(ServiceResponse::new(
-                        req,
-                        Response::Unauthorized().finish(),
-                    )))
-                }
-            })
+            .wrap_fn(check_login!(req,srv))
             .route(web::get().to(get_users))
             .route(web::put().to(update_user))
             .route(web::post().to(update_user)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/template"))
-            .guard(session::LoginGuard)
-/*
-            .wrap_fn(|req, srv| {
-                if session::is_logged(&req) {
-                    srv.call(req)
-                } else {
-                    let req = req.into_parts().0;
-                    Either::Left(ok(ServiceResponse::new(
-                        req,
-                        Response::Unauthorized().finish(),
-                    )))
-                }
-            })
-*/            
+            .wrap_fn(check_login!(req,srv))
             .route(web::get().to(get_user_template)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/{id}"))
-            .wrap_fn(|req, srv| {
-                info!("Checking /users/id");
-                if session::is_logged(&req) {
-                    srv.call(req)
-                } else {
-                    let req = req.into_parts().0;
-                    Either::Left(ok(ServiceResponse::new(
-                        req,
-                        Response::Unauthorized().finish(),
-                    )))
-                }
-            })
+            .wrap_fn(check_login!(req,srv))
             .route(web::get().to(get_user)),
     );
 }
