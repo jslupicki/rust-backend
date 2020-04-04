@@ -1,12 +1,8 @@
-use actix_http::Response;
-use actix_service::Service;
-use actix_web::dev::ServiceResponse;
 use actix_web::web::Json;
 use actix_web::{web, Error, HttpResponse};
 use chrono::NaiveDate;
-use futures::future::{ok, Either};
 
-use crate::session;
+use crate::session::LoggedGuard;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct SalaryDTO {
@@ -70,19 +66,19 @@ async fn get_employee_template() -> Result<HttpResponse, Error> {
 pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
     cfg.service(
         web::resource(prefix)
-            .wrap_fn(check_login!(req,srv))
+            .wrap(LoggedGuard)
             .route(web::get().to(get_employees))
             .route(web::put().to(update_employee))
             .route(web::post().to(update_employee)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/{id}"))
-            .wrap_fn(check_login!(req,srv))
+            .wrap(LoggedGuard)
             .route(web::get().to(get_employee)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/template"))
-            .wrap_fn(check_login!(req,srv))
+            .wrap(LoggedGuard)
             .route(web::get().to(get_employee_template)),
     );
 }

@@ -5,13 +5,13 @@ use std::sync::Mutex;
 use std::task::{Context, Poll};
 
 use actix_http::Response;
-use actix_service::{Service, ServiceFactory, Transform};
+use actix_service::{Service, Transform};
 use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::error::ErrorUnauthorized;
 use actix_web::http::Cookie;
 use actix_web::web::Json;
 use actix_web::{web, Error, HttpMessage, HttpRequest, HttpResponse};
-use futures::future::{ok, Either, LocalBoxFuture, Ready};
+use futures::future::{ok, Ready};
 
 use uuid::Uuid;
 
