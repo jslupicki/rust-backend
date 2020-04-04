@@ -1,11 +1,17 @@
 use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Mutex;
+use std::task::{Context, Poll};
 
-use actix_web::dev::{ServiceRequest};
+use actix_http::Response;
+use actix_service::{Service, ServiceFactory, Transform};
+use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::error::ErrorUnauthorized;
 use actix_web::http::Cookie;
 use actix_web::web::Json;
 use actix_web::{web, Error, HttpMessage, HttpRequest, HttpResponse};
+use futures::future::{ok, Either, LocalBoxFuture, Ready};
 
 use uuid::Uuid;
 
@@ -15,17 +21,74 @@ lazy_static! {
 
 #[macro_export]
 macro_rules! check_login {
-    ($req:ident, $srv:ident) => ( |$req, $srv| {
-        if session::is_logged(&$req) {
-            $srv.call($req)
-        } else {
-            let req = $req.into_parts().0;
-            Either::Left(ok(ServiceResponse::new(
-                req,
-                Response::Unauthorized().finish(),
-            )))
+    ($req:ident, $srv:ident) => {
+        |$req, $srv| {
+            if session::is_logged(&$req) {
+                $srv.call($req)
+            } else {
+                let req = $req.into_parts().0;
+                Either::Left(ok(ServiceResponse::new(
+                    req,
+                    Response::Unauthorized().finish(),
+                )))
+            }
         }
-    })
+    };
+}
+
+pub struct LoggedGuard;
+
+impl<S> Transform<S> for LoggedGuard
+where
+    S: Service<Request = ServiceRequest, Response = ServiceResponse, Error = Error>,
+    S::Future: 'static,
+{
+    type Request = ServiceRequest;
+    type Response = ServiceResponse;
+    type Error = Error;
+    type InitError = ();
+    type Transform = LoggedGuardMiddleware<S>;
+    type Future = Ready<Result<Self::Transform, Self::InitError>>;
+
+    fn new_transform(&self, service: S) -> Self::Future {
+        ok(LoggedGuardMiddleware { service })
+    }
+}
+
+pub struct LoggedGuardMiddleware<S> {
+    service: S,
+}
+
+impl<S> Service for LoggedGuardMiddleware<S>
+where
+    S: Service<Request = ServiceRequest, Response = ServiceResponse, Error = Error>,
+    S::Future: 'static,
+{
+    type Request = ServiceRequest;
+    type Response = ServiceResponse;
+    type Error = Error;
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
+
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.service.poll_ready(cx)
+    }
+
+    fn call(&mut self, req: ServiceRequest) -> Self::Future {
+        if is_logged(&req) {
+            let fut = self.service.call(req);
+            Box::pin(async move {
+                let res = fut.await?;
+                Ok(res)
+            })
+        } else {
+            Box::pin(async move {
+                Ok(ServiceResponse::new(
+                    req.into_parts().0,
+                    Response::Unauthorized().finish(),
+                ))
+            })
+       }
+    }
 }
 
 pub fn is_logged(req: &ServiceRequest) -> bool {

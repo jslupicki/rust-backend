@@ -186,6 +186,7 @@ async fn check_login_guard() {
             //.cookie(session.clone())
             .to_request();
         let resp = test::call_service(&mut app, req).await;
+        info!("Hello");
         info!("GET /users/template => {:#?}", resp.status());
     }
 }

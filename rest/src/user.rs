@@ -122,12 +122,22 @@ pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/template"))
-            .wrap_fn(check_login!(req,srv))
+            .wrap(session::LoggedGuard)
             .route(web::get().to(get_user_template)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/{id}"))
-            .wrap_fn(check_login!(req,srv))
+            .wrap_fn(|req, srv| {
+                if session::is_logged(&req) {
+                    srv.call(req)
+                } else {
+                    let req = req.into_parts().0;
+                    Either::Left(ok(ServiceResponse::new(
+                        req,
+                        Response::Unauthorized().finish(),
+                    )))
+                }
+            })
             .route(web::get().to(get_user)),
     );
 }
