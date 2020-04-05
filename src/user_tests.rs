@@ -1,17 +1,13 @@
-use crate::main_tests::{MUTEX, initialize_log, setup_db, tear_down_db, login_as_user};
 use actix_web::{test, App};
+
 use rest::UserDTO;
+
+use crate::commons_for_tests;
+use crate::main_tests::login_as_user;
 
 #[actix_rt::test]
 async fn get_all_users() {
-    let lock = MUTEX.lock();
-    initialize_log();
-    info!("Start get_all_users() test");
-    setup_db();
-    defer! {
-        tear_down_db();
-        info!("End get_all_users() test");
-    }
+    setup_test!("get_all_users");
 
     let mut app = test::init_service(App::new().configure(|cfg| rest::config_all(cfg))).await;
     let session = login_as_user(&mut app).await;
@@ -34,14 +30,7 @@ async fn get_all_users() {
 
 #[actix_rt::test]
 async fn get_specific_user() {
-    let lock = MUTEX.lock();
-    initialize_log();
-    info!("Start get_specific_user() test");
-    setup_db();
-    defer! {
-        tear_down_db();
-        info!("End get_specific_user() test");
-    }
+    setup_test!("get_specific_user");
 
     let mut app = test::init_service(App::new().configure(|cfg| rest::config_all(cfg))).await;
     let session = login_as_user(&mut app).await;

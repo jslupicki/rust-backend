@@ -3,6 +3,7 @@ use std::sync::Mutex;
 
 use diesel::sqlite::SqliteConnection;
 use diesel_migrations;
+
 use dao::{get_connection, initialize_db};
 
 lazy_static! {
@@ -20,7 +21,7 @@ macro_rules! setup_test {
             commons_for_tests::tear_down_db();
             info!("End {}() test", $test_name);
         }
-    }
+    };
 }
 
 pub fn initialize_log() {
