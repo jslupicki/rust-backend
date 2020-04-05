@@ -19,7 +19,13 @@ extern crate scopeguard;
 #[cfg(test)]
 mod test_data;
 #[cfg(test)]
-mod tests;
+mod main_tests;
+#[cfg(test)]
+mod employee_tests;
+#[cfg(test)]
+mod user_tests;
+#[cfg(test)]
+mod adhoc_tests;
 
 #[actix_rt::main]
 pub async fn main() -> std::io::Result<()> {

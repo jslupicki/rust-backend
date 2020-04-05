@@ -15,7 +15,7 @@ use rest::LoginDTO;
 use crate::test_data::URLS;
 
 lazy_static! {
-    static ref MUTEX: Mutex<i32> = Mutex::new(0i32);
+    pub static ref MUTEX: Mutex<i32> = Mutex::new(0i32);
 }
 
 #[actix_rt::test]
@@ -158,51 +158,18 @@ async fn check_access_control() {
     }
 }
 
-#[actix_rt::test]
-async fn check_login_guard() {
-    let lock = MUTEX.lock();
-    initialize_log();
-    info!("Start check_login_guard() test");
-    setup_db();
-    defer! {
-        tear_down_db();
-        info!("End check_login_guard() test");
-    }
-
-    let mut app = test::init_service(App::new().configure(|cfg| rest::config_all(cfg))).await;
-    let session = login(
-        "admin",
-        "fb001dfcffd1c899f3297871406242f097aecf1a5342ccf3ebcd116146188e4b",
-        &mut app,
-    )
-    .await;
-
-    assert!(session.is_some());
-    if let Some(session) = session {
-        info!("Got session: {}", session);
-        let req = test::TestRequest::get()
-            .uri("/users/template")
-            .method(Method::GET)
-            //.cookie(session.clone())
-            .to_request();
-        let resp = test::call_service(&mut app, req).await;
-        info!("Hello");
-        info!("GET /users/template => {:#?}", resp.status());
-    }
-}
-
-fn initialize_log() {
+pub fn initialize_log() {
     let _ = log4rs::init_file("log4rs.yml", Default::default());
 }
 
-fn setup_db() {
+pub fn setup_db() {
     info!("Initialize DB (if not exist), run migrations");
     env::set_var("DATABASE_URL", ":memory:");
     env::set_var("POOL_SIZE", "1");
     initialize_db().unwrap();
 }
 
-fn tear_down_db() {
+pub fn tear_down_db() {
     let conn: &SqliteConnection = &get_connection();
     loop {
         match diesel_migrations::revert_latest_migration(conn) {
@@ -215,7 +182,7 @@ fn tear_down_db() {
     }
 }
 
-async fn login<S, B, E>(username: &str, password: &str, app: &mut S) -> Option<Cookie<'static>>
+pub async fn login<S, B, E>(username: &str, password: &str, app: &mut S) -> Option<Cookie<'static>>
 where
     S: Service<Request = Request, Response = ServiceResponse<B>, Error = E>,
     E: std::fmt::Debug,
