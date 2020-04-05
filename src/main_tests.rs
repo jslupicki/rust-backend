@@ -1,7 +1,7 @@
 use std::env;
 use std::sync::Mutex;
 
-use actix_http::http::{Cookie, StatusCode, Method};
+use actix_http::http::{Cookie, StatusCode};
 use actix_http::Request;
 use actix_service::Service;
 use actix_web::dev::ServiceResponse;

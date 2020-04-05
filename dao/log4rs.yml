@@ -4,7 +4,7 @@ appenders:
   stdout:
     kind: console
     encoder:
-      pattern: "{l} {d(%Y-%m-%d %H:%M:%S)} [{M} - {L}] - {m}{n}"
+      pattern: "{l} {d(%Y-%m-%d %H:%M:%S%.3f)} [{M} - {L}] - {m}{n}"
 
 root:
   level: info
