@@ -201,3 +201,27 @@ where
         .find(|c| c.name() == "session")
         .map(|c| c.into_owned())
 }
+
+pub async fn login_as_admin<S, B, E>(app: &mut S) -> Option<Cookie<'static>>
+where
+    S: Service<Request = Request, Response = ServiceResponse<B>, Error = E>,
+    E: std::fmt::Debug,
+{
+    login(
+        "admin", 
+        "fb001dfcffd1c899f3297871406242f097aecf1a5342ccf3ebcd116146188e4b", 
+        app
+    ).await
+}
+
+pub async fn login_as_user<S, B, E>(app: &mut S) -> Option<Cookie<'static>>
+where
+    S: Service<Request = Request, Response = ServiceResponse<B>, Error = E>,
+    E: std::fmt::Debug,
+{
+    login(
+        "user", 
+        "8ac76453d769d4fd14b3f41ad4933f9bd64321972cd002de9b847e117435b08b", 
+        app
+    ).await
+}

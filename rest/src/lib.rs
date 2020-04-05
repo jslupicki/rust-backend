@@ -24,6 +24,7 @@ mod employee;
 mod user;
 
 pub use session::LoginDTO;
+pub use user::UserDTO;
 
 async fn index() -> Result<HttpResponse, Error> {
     info!("Got request!");

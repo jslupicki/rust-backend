@@ -7,11 +7,11 @@ use dao::{NewUser, User};
 use crate::session::LoggedGuard;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-struct UserDTO {
-    id: Option<i32>,
-    username: Option<String>,
-    password: Option<String>,
-    is_admin: Option<bool>,
+pub struct UserDTO {
+    pub id: Option<i32>,
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub is_admin: Option<bool>,
 }
 
 impl From<User> for UserDTO {
