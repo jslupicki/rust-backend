@@ -56,6 +56,15 @@ async fn update_employee(_employee_json: Json<EmployeeDTO>) -> Result<HttpRespon
         .body(body))
 }
 
+async fn delete_employee(path: web::Path<String>) -> Result<HttpResponse, Error> {
+    let id: i32 = path.parse().unwrap();
+    info!("Not yet implemented delete user: {}", id);
+     let body = "NOT YET IMPLEMENTED".to_string();
+    Ok(HttpResponse::Ok()
+        .content_type("application/json")
+        .body(body))
+}
+
 async fn get_employee_template() -> Result<HttpResponse, Error> {
     let body = "NOT YET IMPLEMENTED".to_string();
     Ok(HttpResponse::Ok()
@@ -72,13 +81,14 @@ pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
             .route(web::post().to(update_employee)),
     );
     cfg.service(
-        web::resource(format!("{}{}", prefix, "/{id}"))
-            .wrap(LoggedGuard)
-            .route(web::get().to(get_employee)),
-    );
-    cfg.service(
         web::resource(format!("{}{}", prefix, "/template"))
             .wrap(LoggedGuard)
             .route(web::get().to(get_employee_template)),
+    );
+    cfg.service(
+        web::resource(format!("{}{}", prefix, "/{id}"))
+            .wrap(LoggedGuard)
+            .route(web::get().to(get_employee))
+            .route(web::delete().to(delete_employee)),
     );
 }

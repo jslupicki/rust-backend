@@ -95,6 +95,16 @@ async fn update_user(user_json: Json<UserDTO>) -> Result<HttpResponse, Error> {
     }
 }
 
+//TODO: implement delete_user()
+async fn delete_user(path: web::Path<String>) -> Result<HttpResponse, Error> {
+    let id: i32 = path.parse().unwrap();
+    info!("Not yet implemented delete user: {}", id);
+    let body = "NOT YET IMPLEMENTED".to_string();
+    Ok(HttpResponse::Ok()
+        .content_type("application/json")
+        .body(body))
+}
+
 async fn get_user_template() -> Result<HttpResponse, Error> {
     let user = UserDTO {
         id: Some(1i32),
@@ -124,6 +134,7 @@ pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
     cfg.service(
         web::resource(format!("{}{}", prefix, "/{id}"))
             .wrap(LoggedGuard)
-            .route(web::get().to(get_user)),
+            .route(web::get().to(get_user))
+            .route(web::delete().to(delete_user)),
     );
 }
