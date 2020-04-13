@@ -24,6 +24,13 @@ pub fn update_user(user: &User, conn: &SqliteConnection) -> QueryResult<User> {
     })
 }
 
+pub fn delete_user(user: &User, conn: &SqliteConnection) -> QueryResult<usize> {
+    conn.transaction(|| {
+        diesel::delete(users.filter(id.eq(user.id)))
+            .execute(conn)
+    })
+}
+
 pub fn get_users(conn: &SqliteConnection) -> Vec<User> {
     users.load::<User>(conn).expect("Load users failed")
 }
@@ -226,4 +233,16 @@ mod tests {
         assert_eq!(new_user.password, created_user.password);
         assert_eq!(new_user.is_admin, created_user.is_admin);
     }
+
+    #[test]
+    fn check_delete_user() {
+        let conn = &initialize();
+
+        let admin_in_db = get_user(2, conn).unwrap();
+        let deleted_rows = delete_user(&admin_in_db, conn);
+        assert_eq!(deleted_rows.unwrap(), 1);
+        let admin_in_db = get_user(2, conn);
+        assert!(admin_in_db.is_none());
+    }
+
 }

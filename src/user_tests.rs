@@ -147,9 +147,6 @@ async fn delete_user() {
             .to_request();
         let resp = test::call_service(&mut app, req).await;
 
-        // TODO: uncomment when delete user will be implemented
-        //assert_eq!(StatusCode::NOT_FOUND, resp.status());
-        // Delete not yet implemented
-        assert_eq!(StatusCode::OK, resp.status());
+        assert_eq!(StatusCode::NOT_FOUND, resp.status());
     }
 }

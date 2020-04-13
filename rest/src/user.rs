@@ -1,4 +1,4 @@
-use actix_web::error::{ErrorInternalServerError, ErrorNotFound};
+use actix_web::error::{ErrorImATeapot, ErrorInternalServerError, ErrorNotFound};
 use actix_web::web::Json;
 use actix_web::{web, Error, HttpResponse};
 
@@ -95,14 +95,20 @@ async fn update_user(user_json: Json<UserDTO>) -> Result<HttpResponse, Error> {
     }
 }
 
-//TODO: implement delete_user()
 async fn delete_user(path: web::Path<String>) -> Result<HttpResponse, Error> {
     let id: i32 = path.parse().unwrap();
-    info!("Not yet implemented delete user: {}", id);
-    let body = "NOT YET IMPLEMENTED".to_string();
-    Ok(HttpResponse::Ok()
-        .content_type("application/json")
-        .body(body))
+    if let Some(user) = dao::get_user(id) {
+        match dao::delete_user(&user) {
+            Ok(deleted) if deleted == 0 => Err(ErrorImATeapot(format!("Deleted 0 users!?"))),
+            Ok(deleted) if deleted > 1 =>  Err(ErrorImATeapot(format!("Deleted {}>1 users!?", deleted))),
+            Ok(_) => Ok(HttpResponse::Ok()
+                            .content_type("application/json")
+                            .body("{deleted:1}")),
+            Err(e) => Err(ErrorInternalServerError(e)),
+        }
+    } else {
+        Err(ErrorNotFound(format!("Can't find user with id = {}", id)))
+    }
 }
 
 async fn get_user_template() -> Result<HttpResponse, Error> {

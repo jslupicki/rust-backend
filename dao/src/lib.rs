@@ -43,6 +43,11 @@ pub fn update_user(user: &User) -> QueryResult<User> {
     users_dao::update_user(user, &conn)
 }
 
+pub fn delete_user(user: &User) -> QueryResult<usize> {
+    let conn = get_connection();
+    users_dao::delete_user(user, &conn)
+}
+
 pub fn get_users() -> Vec<User> {
     let conn = get_connection();
     users_dao::get_users(&conn)
