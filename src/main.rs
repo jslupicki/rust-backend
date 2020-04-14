@@ -1,9 +1,7 @@
 extern crate dao;
 #[cfg(test)]
-#[macro_use]
 extern crate diesel;
 #[cfg(test)]
-#[macro_use]
 extern crate diesel_migrations;
 #[cfg(test)]
 #[macro_use]
