@@ -1,4 +1,4 @@
-###### This is my toy project to learn Rust. 
+### This is my toy project to learn Rust.
 
 Some time ago I've participated in recruit process in Solteq. I've ended up in different company but
 I'm considering this as one of the best recruitment experience in which I've participated. 
