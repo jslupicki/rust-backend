@@ -25,10 +25,7 @@ pub fn update_user(user: &User, conn: &SqliteConnection) -> QueryResult<User> {
 }
 
 pub fn delete_user(user: &User, conn: &SqliteConnection) -> QueryResult<usize> {
-    conn.transaction(|| {
-        diesel::delete(users.filter(id.eq(user.id)))
-            .execute(conn)
-    })
+    conn.transaction(|| diesel::delete(users.filter(id.eq(user.id))).execute(conn))
 }
 
 pub fn get_users(conn: &SqliteConnection) -> Vec<User> {
@@ -43,6 +40,7 @@ pub fn get_user(id_to_find: i32, conn: &SqliteConnection) -> Option<User> {
         .unwrap_or(None)
 }
 
+//TODO: should return Option<User>
 pub fn validate_user(username_p: &String, password_p: &String, conn: &SqliteConnection) -> bool {
     info!(
         "Validate user '{}' with password '{}'",
@@ -244,5 +242,4 @@ mod tests {
         let admin_in_db = get_user(2, conn);
         assert!(admin_in_db.is_none());
     }
-
 }

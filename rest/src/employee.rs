@@ -59,7 +59,7 @@ async fn update_employee(_employee_json: Json<EmployeeDTO>) -> Result<HttpRespon
 async fn delete_employee(path: web::Path<String>) -> Result<HttpResponse, Error> {
     let id: i32 = path.parse().unwrap();
     info!("Not yet implemented delete user: {}", id);
-     let body = "NOT YET IMPLEMENTED".to_string();
+    let body = "NOT YET IMPLEMENTED".to_string();
     Ok(HttpResponse::Ok()
         .content_type("application/json")
         .body(body))
@@ -75,20 +75,32 @@ async fn get_employee_template() -> Result<HttpResponse, Error> {
 pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
     cfg.service(
         web::resource(prefix)
-            .wrap(LoggedGuard)
+            .wrap(LoggedGuard {
+                have_to_be_admin: false,
+            })
             .route(web::get().to(get_employees))
+            .wrap(LoggedGuard {
+                have_to_be_admin: true,
+            })
             .route(web::put().to(update_employee))
             .route(web::post().to(update_employee)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/template"))
-            .wrap(LoggedGuard)
+            .wrap(LoggedGuard {
+                have_to_be_admin: false,
+            })
             .route(web::get().to(get_employee_template)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/{id}"))
-            .wrap(LoggedGuard)
+            .wrap(LoggedGuard {
+                have_to_be_admin: false,
+            })
             .route(web::get().to(get_employee))
+            .wrap(LoggedGuard {
+                have_to_be_admin: true,
+            })
             .route(web::delete().to(delete_employee)),
     );
 }

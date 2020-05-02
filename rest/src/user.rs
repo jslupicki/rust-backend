@@ -100,10 +100,12 @@ async fn delete_user(path: web::Path<String>) -> Result<HttpResponse, Error> {
     if let Some(user) = dao::get_user(id) {
         match dao::delete_user(&user) {
             Ok(deleted) if deleted == 0 => Err(ErrorImATeapot(format!("Deleted 0 users!?"))),
-            Ok(deleted) if deleted > 1 =>  Err(ErrorImATeapot(format!("Deleted {}>1 users!?", deleted))),
+            Ok(deleted) if deleted > 1 => {
+                Err(ErrorImATeapot(format!("Deleted {}>1 users!?", deleted)))
+            }
             Ok(_) => Ok(HttpResponse::Ok()
-                            .content_type("application/json")
-                            .body("{deleted:1}")),
+                .content_type("application/json")
+                .body("{deleted:1}")),
             Err(e) => Err(ErrorInternalServerError(e)),
         }
     } else {
@@ -127,20 +129,32 @@ async fn get_user_template() -> Result<HttpResponse, Error> {
 pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
     cfg.service(
         web::resource(prefix)
-            .wrap(LoggedGuard)
+            .wrap(LoggedGuard {
+                have_to_be_admin: false,
+            })
             .route(web::get().to(get_users))
+            .wrap(LoggedGuard {
+                have_to_be_admin: true,
+            })
             .route(web::put().to(update_user))
             .route(web::post().to(update_user)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/template"))
-            .wrap(LoggedGuard)
+            .wrap(LoggedGuard {
+                have_to_be_admin: false,
+            })
             .route(web::get().to(get_user_template)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/{id}"))
-            .wrap(LoggedGuard)
+            .wrap(LoggedGuard {
+                have_to_be_admin: false,
+            })
             .route(web::get().to(get_user))
+            .wrap(LoggedGuard {
+                have_to_be_admin: true,
+            })
             .route(web::delete().to(delete_user)),
     );
 }

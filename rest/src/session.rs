@@ -12,31 +12,16 @@ use actix_web::http::Cookie;
 use actix_web::web::Json;
 use actix_web::{web, Error, HttpMessage, HttpRequest, HttpResponse};
 use futures::future::{ok, Ready};
-
 use uuid::Uuid;
 
 lazy_static! {
+    //TODO: should hold ID also
     static ref SESSIONS: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
 }
 
-#[macro_export]
-macro_rules! check_login {
-    ($req:ident, $srv:ident) => {
-        |$req, $srv| {
-            if session::is_logged(&$req) {
-                $srv.call($req)
-            } else {
-                let req = $req.into_parts().0;
-                Either::Left(ok(ServiceResponse::new(
-                    req,
-                    Response::Unauthorized().finish(),
-                )))
-            }
-        }
-    };
+pub struct LoggedGuard {
+    pub have_to_be_admin: bool,
 }
-
-pub struct LoggedGuard;
 
 impl<S> Transform<S> for LoggedGuard
 where
@@ -46,17 +31,21 @@ where
     type Request = ServiceRequest;
     type Response = ServiceResponse;
     type Error = Error;
-    type InitError = ();
     type Transform = LoggedGuardMiddleware<S>;
+    type InitError = ();
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        ok(LoggedGuardMiddleware { service })
+        ok(LoggedGuardMiddleware {
+            service,
+            have_to_be_admin: self.have_to_be_admin,
+        })
     }
 }
 
 pub struct LoggedGuardMiddleware<S> {
     service: S,
+    have_to_be_admin: bool,
 }
 
 impl<S> Service for LoggedGuardMiddleware<S>
@@ -74,7 +63,7 @@ where
     }
 
     fn call(&mut self, req: ServiceRequest) -> Self::Future {
-        if is_logged(&req) {
+        if is_logged(&req, self.have_to_be_admin) {
             let fut = self.service.call(req);
             Box::pin(async move {
                 let res = fut.await?;
@@ -87,15 +76,18 @@ where
                     Response::Unauthorized().finish(),
                 ))
             })
-       }
+        }
     }
 }
 
-pub fn is_logged(req: &ServiceRequest) -> bool {
+pub fn is_logged(req: &ServiceRequest, have_to_be_admin: bool) -> bool {
     let session = req
         .cookie("session")
         .map_or("nothing".to_string(), |c| c.value().to_string());
     if let Some(username) = SESSIONS.lock().unwrap().get(&session) {
+        if have_to_be_admin {
+            //TODO: add check if 'username' is admin
+        }
         info!(
             "Allow access to {} with session {} for user {}",
             req.path(),
@@ -130,6 +122,7 @@ async fn login(body: Json<LoginDTO>) -> Result<HttpResponse, Error> {
             user.username, user.password, user.is_admin
         );
     }
+    //TODO: let Some(user) = dao::validate_user(&body.username, &body.password) when dao will be fixed
     if dao::validate_user(&body.username, &body.password) {
         let session_value = Uuid::new_v4().to_hyphenated().to_string();
         let session_cookie = Cookie::new("session", session_value.to_owned());
@@ -141,7 +134,7 @@ async fn login(body: Json<LoginDTO>) -> Result<HttpResponse, Error> {
         SESSIONS
             .lock()
             .unwrap()
-            .insert(session_value, body.username.to_owned());
+            .insert(session_value, body.username.to_owned()); //TODO: put ID also
         Ok(response)
     } else {
         Err(ErrorUnauthorized("Wrong login or password"))

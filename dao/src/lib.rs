@@ -58,6 +58,7 @@ pub fn get_user(id: i32) -> Option<User> {
     users_dao::get_user(id, &conn)
 }
 
+//TODO: should return Option<User>
 pub fn validate_user(username: &String, password: &String) -> bool {
     let conn = get_connection();
     users_dao::validate_user(username, password, &conn)
