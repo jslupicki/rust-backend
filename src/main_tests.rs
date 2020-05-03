@@ -68,27 +68,31 @@ async fn check_access_control() {
     setup_test!("check_access_control");
 
     let mut app = test::init_service(App::new().configure(|cfg| rest::config_all(cfg))).await;
-    let session = login(
-        "admin",
-        "fb001dfcffd1c899f3297871406242f097aecf1a5342ccf3ebcd116146188e4b",
-        &mut app,
-    )
-    .await;
+    let admin_session = login_as_admin(&mut app).await;
+    let user_session = login_as_user(&mut app).await;
 
-    assert!(session.is_some());
-    if let Some(session) = session {
-        info!("Got session: {}", session);
+    assert!(user_session.is_some());
+    assert!(admin_session.is_some());
+    if let (Some(admin_session), Some(user_session)) = (admin_session, user_session) {
+        info!("Got admin_session: {}", admin_session);
+        info!("Got user_session: {}", user_session);
         for url in &*URLS {
             debug!("Checking {:#?}", url);
             let req_without_session = test::TestRequest::with_uri(url.url)
                 .method(url.method.clone())
                 .to_request();
-            let req_with_session = test::TestRequest::with_uri(url.url)
+            let req_with_admin_session = test::TestRequest::with_uri(url.url)
                 .method(url.method.clone())
-                .cookie(session.clone())
+                .cookie(admin_session.clone())
+                .to_request();
+            let req_with_user_session = test::TestRequest::with_uri(url.url)
+                .method(url.method.clone())
+                .cookie(user_session.clone())
                 .to_request();
             let resp_without_session = test::call_service(&mut app, req_without_session).await;
-            let resp_with_session = test::call_service(&mut app, req_with_session).await;
+            let resp_with_admin_session =
+                test::call_service(&mut app, req_with_admin_session).await;
+            let resp_with_user_session = test::call_service(&mut app, req_with_user_session).await;
             if url.guarded {
                 assert_eq!(
                     StatusCode::UNAUTHORIZED,
@@ -96,12 +100,33 @@ async fn check_access_control() {
                     "Call {:#?} without session should respond with UNAUTHORIZED",
                     url
                 );
-                assert_ne!(
-                    StatusCode::UNAUTHORIZED,
-                    resp_with_session.status(),
-                    "Call {:#?} with session should NOT respond with UNAUTHORIZED",
-                    url
-                );
+                if url.have_to_be_admin {
+                    assert_ne!(
+                        StatusCode::UNAUTHORIZED,
+                        resp_with_admin_session.status(),
+                        "Call {:#?} with admin session should NOT respond with UNAUTHORIZED",
+                        url
+                    );
+                    assert_eq!(
+                        StatusCode::UNAUTHORIZED,
+                        resp_with_user_session.status(),
+                        "Call {:#?} with user session should respond with UNAUTHORIZED",
+                        url
+                    );
+                } else {
+                    assert_ne!(
+                        StatusCode::UNAUTHORIZED,
+                        resp_with_admin_session.status(),
+                        "Call {:#?} with admin session should NOT respond with UNAUTHORIZED",
+                        url
+                    );
+                    assert_ne!(
+                        StatusCode::UNAUTHORIZED,
+                        resp_with_user_session.status(),
+                        "Call {:#?} with user session should NOT respond with UNAUTHORIZED",
+                        url
+                    );
+                }
             } else {
                 assert_ne!(
                     StatusCode::UNAUTHORIZED,
@@ -111,7 +136,7 @@ async fn check_access_control() {
                 );
                 assert_ne!(
                     StatusCode::UNAUTHORIZED,
-                    resp_with_session.status(),
+                    resp_with_admin_session.status(),
                     "Call {:#?} with session should NOT respond with UNAUTHORIZED",
                     url
                 );

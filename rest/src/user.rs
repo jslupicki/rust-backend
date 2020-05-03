@@ -132,7 +132,10 @@ pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
             .wrap(LoggedGuard {
                 have_to_be_admin: false,
             })
-            .route(web::get().to(get_users))
+            .route(web::get().to(get_users)),
+    );
+    cfg.service(
+        web::resource(prefix)
             .wrap(LoggedGuard {
                 have_to_be_admin: true,
             })
@@ -151,7 +154,10 @@ pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
             .wrap(LoggedGuard {
                 have_to_be_admin: false,
             })
-            .route(web::get().to(get_user))
+            .route(web::get().to(get_user)),
+    );
+    cfg.service(
+        web::resource(format!("{}{}", prefix, "/{id}"))
             .wrap(LoggedGuard {
                 have_to_be_admin: true,
             })

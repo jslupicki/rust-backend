@@ -40,18 +40,20 @@ pub fn get_user(id_to_find: i32, conn: &SqliteConnection) -> Option<User> {
         .unwrap_or(None)
 }
 
-//TODO: should return Option<User>
-pub fn validate_user(username_p: &String, password_p: &String, conn: &SqliteConnection) -> bool {
+pub fn validate_user(
+    username_p: &String,
+    password_p: &String,
+    conn: &SqliteConnection,
+) -> Option<User> {
     info!(
         "Validate user '{}' with password '{}'",
         username_p, password_p
     );
-    let how_many_users_fit: i64 = users
-        .select(count(id))
+    users
         .filter(username.eq(username_p).and(password.eq(password_p)))
         .first(conn)
-        .expect("Error validate user");
-    how_many_users_fit > 0
+        .optional()
+        .unwrap_or(None)
 }
 
 pub fn hash(text: &String) -> String {
@@ -146,26 +148,19 @@ mod tests {
     fn check_validate_user() {
         let conn = &initialize();
 
-        assert_eq!(
-            true,
-            validate_user(
-                &"admin".to_string(),
-                &"fb001dfcffd1c899f3297871406242f097aecf1a5342ccf3ebcd116146188e4b".to_string(),
-                conn,
-            )
-        );
-        assert_eq!(
-            false,
-            validate_user(
-                &"wrong".to_string(),
-                &"fb001dfcffd1c899f3297871406242f097aecf1a5342ccf3ebcd116146188e4b".to_string(),
-                conn,
-            )
-        );
-        assert_eq!(
-            false,
-            validate_user(&"admin".to_string(), &"wrong".to_string(), conn)
-        );
+        assert!(validate_user(
+            &"admin".to_string(),
+            &"fb001dfcffd1c899f3297871406242f097aecf1a5342ccf3ebcd116146188e4b".to_string(),
+            conn,
+        )
+        .is_some());
+        assert!(validate_user(
+            &"wrong".to_string(),
+            &"fb001dfcffd1c899f3297871406242f097aecf1a5342ccf3ebcd116146188e4b".to_string(),
+            conn,
+        )
+        .is_none());
+        assert!(validate_user(&"admin".to_string(), &"wrong".to_string(), conn).is_none());
     }
 
     #[test]

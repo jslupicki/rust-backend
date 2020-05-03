@@ -15,8 +15,7 @@ use futures::future::{ok, Ready};
 use uuid::Uuid;
 
 lazy_static! {
-    //TODO: should hold ID also
-    static ref SESSIONS: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
+    static ref SESSIONS: Mutex<HashMap<String, (String, i32)>> = Mutex::new(HashMap::new());
 }
 
 pub struct LoggedGuard {
@@ -84,25 +83,28 @@ pub fn is_logged(req: &ServiceRequest, have_to_be_admin: bool) -> bool {
     let session = req
         .cookie("session")
         .map_or("nothing".to_string(), |c| c.value().to_string());
-    if let Some(username) = SESSIONS.lock().unwrap().get(&session) {
-        if have_to_be_admin {
-            //TODO: add check if 'username' is admin
+    if let Some((username, id)) = SESSIONS.lock().unwrap().get(&session) {
+        let user = dao::get_user(*id).unwrap();
+        debug!(
+            "session: {}, user: {}, have_to_be_admin: {}, is_admin: {}",
+            session, user.username, have_to_be_admin, user.is_admin
+        );
+        if (have_to_be_admin && user.is_admin) || !have_to_be_admin {
+            info!(
+                "Allow access to {} with session {} for user {}",
+                req.path(),
+                session,
+                username
+            );
+            return true;
         }
-        info!(
-            "Allow access to {} with session {} for user {}",
-            req.path(),
-            session,
-            username
-        );
-        true
-    } else {
-        error!(
-            "Unauthorized access to {} with session {}",
-            req.path(),
-            session
-        );
-        false
     }
+    error!(
+        "Unauthorized access to {} with session {}",
+        req.path(),
+        session
+    );
+    return false;
 }
 
 #[derive(Serialize, Deserialize)]
@@ -122,8 +124,7 @@ async fn login(body: Json<LoginDTO>) -> Result<HttpResponse, Error> {
             user.username, user.password, user.is_admin
         );
     }
-    //TODO: let Some(user) = dao::validate_user(&body.username, &body.password) when dao will be fixed
-    if dao::validate_user(&body.username, &body.password) {
+    if let Some(user) = dao::validate_user(&body.username, &body.password) {
         let session_value = Uuid::new_v4().to_hyphenated().to_string();
         let session_cookie = Cookie::new("session", session_value.to_owned());
         let mut response = HttpResponse::Ok().content_type("text/plain").body(format!(
@@ -134,7 +135,7 @@ async fn login(body: Json<LoginDTO>) -> Result<HttpResponse, Error> {
         SESSIONS
             .lock()
             .unwrap()
-            .insert(session_value, body.username.to_owned()); //TODO: put ID also
+            .insert(session_value, (body.username.to_owned(), user.id));
         Ok(response)
     } else {
         Err(ErrorUnauthorized("Wrong login or password"))
@@ -164,9 +165,12 @@ async fn get_login_template() -> Result<HttpResponse, Error> {
 }
 
 pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
+    cfg.service(web::resource(prefix).route(web::post().to(login)));
     cfg.service(
         web::resource(prefix)
-            .route(web::post().to(login))
+            .wrap(LoggedGuard {
+                have_to_be_admin: false,
+            })
             .route(web::delete().to(logout)),
     );
     cfg.service(
@@ -182,10 +186,10 @@ mod tests {
     #[test]
     fn session_test() {
         let mut sessions = SESSIONS.lock().unwrap();
-        sessions.insert("key".to_string(), "value".to_string());
+        sessions.insert("key".to_string(), ("value".to_string(), 1));
         assert_eq!(
             &"value".to_string(),
-            sessions.get(&"key".to_string()).unwrap()
+            &sessions.get(&"key".to_string()).unwrap().0
         );
     }
 }
