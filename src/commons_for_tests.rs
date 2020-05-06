@@ -13,6 +13,7 @@ lazy_static! {
 #[macro_export]
 macro_rules! setup_test {
     ($test_name:expr) => {
+        #[allow(unused_variables)]
         let lock = commons_for_tests::MUTEX.lock();
         commons_for_tests::initialize_log();
         info!("Start {}() test", $test_name);
