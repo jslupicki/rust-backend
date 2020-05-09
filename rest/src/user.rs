@@ -1,3 +1,4 @@
+use actix_http::http::Method;
 use actix_web::error::{ErrorImATeapot, ErrorInternalServerError, ErrorNotFound};
 use actix_web::web::Json;
 use actix_web::{web, Error, HttpResponse};
@@ -130,37 +131,28 @@ pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
     cfg.service(
         web::resource(prefix)
             .wrap(LoggedGuard {
-                have_to_be_admin: false,
+                as_admin: &[Method::PUT, Method::POST],
             })
-            .route(web::get().to(get_users)),
-    );
-    cfg.service(
-        web::resource(prefix)
-            .wrap(LoggedGuard {
-                have_to_be_admin: true,
-            })
+            .route(web::get().to(get_users))
             .route(web::put().to(update_user))
             .route(web::post().to(update_user)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/template"))
-            .wrap(LoggedGuard {
-                have_to_be_admin: false,
-            })
+            .wrap(LoggedGuard { as_admin: &[] })
             .route(web::get().to(get_user_template)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/{id}"))
-            .wrap(LoggedGuard {
-                have_to_be_admin: false,
-            })
+            .wrap(LoggedGuard { as_admin: &[] })
             .route(web::get().to(get_user)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/{id}"))
             .wrap(LoggedGuard {
-                have_to_be_admin: true,
+                as_admin: &[Method::DELETE],
             })
+            .route(web::get().to(get_user))
             .route(web::delete().to(delete_user)),
     );
 }

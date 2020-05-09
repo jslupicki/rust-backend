@@ -3,6 +3,7 @@ use actix_web::{web, Error, HttpResponse};
 use chrono::NaiveDate;
 
 use crate::session::LoggedGuard;
+use actix_http::http::Method;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct SalaryDTO {
@@ -76,37 +77,23 @@ pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
     cfg.service(
         web::resource(prefix)
             .wrap(LoggedGuard {
-                have_to_be_admin: false,
+                as_admin: &[Method::PUT, Method::POST],
             })
-            .route(web::get().to(get_employees)),
-    );
-    cfg.service(
-        web::resource(prefix)
-            .wrap(LoggedGuard {
-                have_to_be_admin: true,
-            })
+            .route(web::get().to(get_employees))
             .route(web::put().to(update_employee))
             .route(web::post().to(update_employee)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/template"))
-            .wrap(LoggedGuard {
-                have_to_be_admin: false,
-            })
+            .wrap(LoggedGuard { as_admin: &[] })
             .route(web::get().to(get_employee_template)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/{id}"))
             .wrap(LoggedGuard {
-                have_to_be_admin: false,
+                as_admin: &[Method::DELETE],
             })
-            .route(web::get().to(get_employee)),
-    );
-    cfg.service(
-        web::resource(format!("{}{}", prefix, "/{id}"))
-            .wrap(LoggedGuard {
-                have_to_be_admin: true,
-            })
+            .route(web::get().to(get_employee))
             .route(web::delete().to(delete_employee)),
     );
 }

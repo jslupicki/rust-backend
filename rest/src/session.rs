@@ -4,6 +4,7 @@ use std::pin::Pin;
 use std::sync::Mutex;
 use std::task::{Context, Poll};
 
+use actix_http::http::Method;
 use actix_http::Response;
 use actix_service::{Service, Transform};
 use actix_web::dev::{ServiceRequest, ServiceResponse};
@@ -19,7 +20,7 @@ lazy_static! {
 }
 
 pub struct LoggedGuard {
-    pub have_to_be_admin: bool,
+    pub as_admin: &'static [Method],
 }
 
 impl<S> Transform<S> for LoggedGuard
@@ -37,14 +38,14 @@ where
     fn new_transform(&self, service: S) -> Self::Future {
         ok(LoggedGuardMiddleware {
             service,
-            have_to_be_admin: self.have_to_be_admin,
+            as_admin: self.as_admin,
         })
     }
 }
 
 pub struct LoggedGuardMiddleware<S> {
     service: S,
-    have_to_be_admin: bool,
+    as_admin: &'static [Method],
 }
 
 impl<S> Service for LoggedGuardMiddleware<S>
@@ -62,7 +63,7 @@ where
     }
 
     fn call(&mut self, req: ServiceRequest) -> Self::Future {
-        if is_logged(&req, self.have_to_be_admin) {
+        if is_logged(&req, self.as_admin) {
             let fut = self.service.call(req);
             Box::pin(async move {
                 let res = fut.await?;
@@ -79,25 +80,23 @@ where
     }
 }
 
-pub fn is_logged(req: &ServiceRequest, have_to_be_admin: bool) -> bool {
+pub fn is_logged(req: &ServiceRequest, as_admin: &[Method]) -> bool {
     let session = req
         .cookie("session")
         .map_or("nothing".to_string(), |c| c.value().to_string());
     if let Some((username, id)) = SESSIONS.lock().unwrap().get(&session) {
         let user = dao::get_user(*id).unwrap();
         debug!(
-            "session: {}, user: {}, have_to_be_admin: {}, is_admin: {}",
-            session, user.username, have_to_be_admin, user.is_admin
+            "session: {}, user: {}, is_admin: {}",
+            session, user.username, user.is_admin
         );
-        if (have_to_be_admin && user.is_admin) || !have_to_be_admin {
-            info!(
-                "Allow access to {} with session {} for user {}",
-                req.path(),
-                session,
-                username
-            );
-            return true;
-        }
+        info!(
+            "Allow access to {} with session {} for user {}",
+            req.path(),
+            session,
+            username
+        );
+        return true;
     }
     error!(
         "Unauthorized access to {} with session {}",
@@ -169,7 +168,7 @@ pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
     cfg.service(
         web::resource(prefix)
             .wrap(LoggedGuard {
-                have_to_be_admin: false,
+                as_admin: &[Method::DELETE],
             })
             .route(web::delete().to(logout)),
     );
