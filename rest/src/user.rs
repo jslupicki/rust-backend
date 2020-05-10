@@ -132,6 +132,7 @@ pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
         web::resource(prefix)
             .wrap(LoggedGuard {
                 as_admin: &[Method::PUT, Method::POST],
+                except: &[],
             })
             .route(web::get().to(get_users))
             .route(web::put().to(update_user))
@@ -139,18 +140,25 @@ pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/template"))
-            .wrap(LoggedGuard { as_admin: &[] })
+            .wrap(LoggedGuard {
+                as_admin: &[],
+                except: &[],
+            })
             .route(web::get().to(get_user_template)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/{id}"))
-            .wrap(LoggedGuard { as_admin: &[] })
+            .wrap(LoggedGuard {
+                as_admin: &[],
+                except: &[],
+            })
             .route(web::get().to(get_user)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/{id}"))
             .wrap(LoggedGuard {
                 as_admin: &[Method::DELETE],
+                except: &[],
             })
             .route(web::get().to(get_user))
             .route(web::delete().to(delete_user)),

@@ -65,6 +65,12 @@ lazy_static! {
             have_to_be_admin: false,
         },
         UrlCall{
+            url: "/employees/1",
+            method: Method::DELETE,
+            guarded: true,
+            have_to_be_admin: true,
+        },
+        UrlCall{
             url: "/employees",
             method: Method::GET,
             guarded: true,

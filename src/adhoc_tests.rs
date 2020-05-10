@@ -39,6 +39,14 @@ fn check_lg() {
             LoggedAsAdmin(methods) => info!("Logged as admin for methods: {:?}", methods),
         };
     }
+    fn contain_method(method: &Method, methods: &[Method]) -> bool {
+        for m in methods.iter() {
+            if method == m {
+                return true;
+            }
+        }
+        false
+    }
 
     let _ = log4rs::init_file("log4rs.yml", Default::default());
     let logged = Logged;
@@ -51,4 +59,22 @@ fn check_lg() {
     let guard = &logged_as_admin;
     info!("Second LoggedAsAdmin:");
     show_lg(guard);
+
+    if let LoggedAsAdmin(methods) = logged_as_admin {
+        info!(
+            "Is GET in {:?} -> {}",
+            methods,
+            contain_method(&Method::GET, methods)
+        );
+        info!(
+            "Is PUT in {:?} -> {}",
+            methods,
+            contain_method(&Method::PUT, methods)
+        );
+        info!(
+            "Is POST in {:?} -> {}",
+            methods,
+            contain_method(&Method::PUT, methods)
+        );
+    }
 }

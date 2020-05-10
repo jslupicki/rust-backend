@@ -21,6 +21,7 @@ lazy_static! {
 
 pub struct LoggedGuard {
     pub as_admin: &'static [Method],
+    pub except: &'static [Method],
 }
 
 impl<S> Transform<S> for LoggedGuard
@@ -39,6 +40,7 @@ where
         ok(LoggedGuardMiddleware {
             service,
             as_admin: self.as_admin,
+            except: self.except,
         })
     }
 }
@@ -46,6 +48,7 @@ where
 pub struct LoggedGuardMiddleware<S> {
     service: S,
     as_admin: &'static [Method],
+    except: &'static [Method],
 }
 
 impl<S> Service for LoggedGuardMiddleware<S>
@@ -63,7 +66,7 @@ where
     }
 
     fn call(&mut self, req: ServiceRequest) -> Self::Future {
-        if is_logged(&req, self.as_admin) {
+        if is_logged(&req, self.as_admin, self.except) {
             let fut = self.service.call(req);
             Box::pin(async move {
                 let res = fut.await?;
@@ -80,30 +83,55 @@ where
     }
 }
 
-pub fn is_logged(req: &ServiceRequest, as_admin: &[Method]) -> bool {
+pub fn is_logged(req: &ServiceRequest, as_admin: &[Method], except: &[Method]) -> bool {
+    if contain_method(req.method(), except) {
+        return true;
+    }
     let session = req
         .cookie("session")
         .map_or("nothing".to_string(), |c| c.value().to_string());
     if let Some((username, id)) = SESSIONS.lock().unwrap().get(&session) {
         let user = dao::get_user(*id).unwrap();
+        let method = req.method();
         debug!(
-            "session: {}, user: {}, is_admin: {}",
-            session, user.username, user.is_admin
+            "session: {}, user: {}, is_admin: {}, method: {}, admin rights for methods: {:?}",
+            session, user.username, user.is_admin, method, as_admin
         );
-        info!(
-            "Allow access to {} with session {} for user {}",
+        let is_admin_method = contain_method(method, as_admin);
+        if as_admin.len() == 0 || !is_admin_method || (is_admin_method && user.is_admin) {
+            info!(
+                "Allow access to {} with session {} for user '{}'",
+                req.path(),
+                session,
+                username
+            );
+            true
+        } else {
+            error!(
+                "Unauthorized access to {} with session {} for user '{}'",
+                req.path(),
+                session,
+                username
+            );
+            false
+        }
+    } else {
+        error!(
+            "Unauthorized access to {} with session {}",
             req.path(),
-            session,
-            username
+            session
         );
-        return true;
+        false
     }
-    error!(
-        "Unauthorized access to {} with session {}",
-        req.path(),
-        session
-    );
-    return false;
+}
+
+fn contain_method(method: &Method, methods: &[Method]) -> bool {
+    for m in methods.iter() {
+        if method == m {
+            return true;
+        }
+    }
+    false
 }
 
 #[derive(Serialize, Deserialize)]
@@ -164,12 +192,13 @@ async fn get_login_template() -> Result<HttpResponse, Error> {
 }
 
 pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
-    cfg.service(web::resource(prefix).route(web::post().to(login)));
     cfg.service(
         web::resource(prefix)
             .wrap(LoggedGuard {
-                as_admin: &[Method::DELETE],
+                as_admin: &[],
+                except: &[Method::POST],
             })
+            .route(web::post().to(login))
             .route(web::delete().to(logout)),
     );
     cfg.service(
