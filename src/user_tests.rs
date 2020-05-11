@@ -4,7 +4,7 @@ use actix_web::{test, App};
 use rest::UserDTO;
 
 use crate::commons_for_tests;
-use crate::main_tests::login_as_user;
+use crate::main_tests::{login_as_admin, login_as_user};
 
 #[actix_rt::test]
 async fn get_all_users() {
@@ -61,7 +61,7 @@ async fn update_user() {
     setup_test!("update_user");
 
     let mut app = test::init_service(App::new().configure(|cfg| rest::config_all(cfg))).await;
-    let session = login_as_user(&mut app).await;
+    let session = login_as_admin(&mut app).await;
 
     assert!(session.is_some());
     if let Some(session) = session {
@@ -78,9 +78,9 @@ async fn update_user() {
             .set_json(&user)
             .to_request();
         let resp = test::call_service(&mut app, req).await;
-        
+
         assert!(resp.status().is_success());
-        
+
         let req = test::TestRequest::get()
             .uri("/users/1")
             .cookie(session.clone())
@@ -105,9 +105,9 @@ async fn update_user() {
             .set_json(&user)
             .to_request();
         let resp = test::call_service(&mut app, req).await;
-        
+
         assert!(resp.status().is_success());
-        
+
         let req = test::TestRequest::get()
             .uri("/users/1")
             .cookie(session.clone())
@@ -127,20 +127,20 @@ async fn delete_user() {
     setup_test!("delete_user");
 
     let mut app = test::init_service(App::new().configure(|cfg| rest::config_all(cfg))).await;
-    let session = login_as_user(&mut app).await;
+    let session = login_as_admin(&mut app).await;
 
     assert!(session.is_some());
     if let Some(session) = session {
         info!("Got session: {}", session);
-        
+
         let req = test::TestRequest::delete()
             .uri("/users/1")
             .cookie(session.clone())
             .to_request();
         let resp = test::call_service(&mut app, req).await;
-        
+
         assert!(resp.status().is_success());
-        
+
         let req = test::TestRequest::get()
             .uri("/users/1")
             .cookie(session.clone())
