@@ -3,7 +3,7 @@ use actix_web::web::Json;
 use actix_web::{web, Error, HttpResponse};
 use chrono::NaiveDate;
 
-use crate::session::LoggedGuard;
+use crate::session::LoggedGuard::{Logged, LoggedAsAdmin};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct SalaryDTO {
@@ -76,28 +76,19 @@ async fn get_employee_template() -> Result<HttpResponse, Error> {
 pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
     cfg.service(
         web::resource(prefix)
-            .wrap(LoggedGuard {
-                as_admin: &[Method::PUT, Method::POST],
-                except: &[],
-            })
+            .wrap(LoggedAsAdmin(&[Method::PUT, Method::POST]))
             .route(web::get().to(get_employees))
             .route(web::put().to(update_employee))
             .route(web::post().to(update_employee)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/template"))
-            .wrap(LoggedGuard {
-                as_admin: &[],
-                except: &[],
-            })
+            .wrap(Logged)
             .route(web::get().to(get_employee_template)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/{id}"))
-            .wrap(LoggedGuard {
-                as_admin: &[Method::DELETE],
-                except: &[],
-            })
+            .wrap(LoggedAsAdmin(&[Method::DELETE]))
             .route(web::get().to(get_employee))
             .route(web::delete().to(delete_employee)),
     );

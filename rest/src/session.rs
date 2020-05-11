@@ -16,13 +16,18 @@ use futures::future::{ok, Ready};
 use uuid::Uuid;
 
 lazy_static! {
+    /// Map: session_id -> (username, user_id)
     static ref SESSIONS: Mutex<HashMap<String, (String, i32)>> = Mutex::new(HashMap::new());
 }
 
-pub struct LoggedGuard {
-    pub as_admin: &'static [Method],
-    pub except: &'static [Method],
+pub enum LoggedGuard {
+    Logged,
+    LoggedWithException(&'static [Method]),
+    LoggedAsAdmin(&'static [Method]),
+    LoggedAsAdminWithException(&'static [Method], &'static [Method]),
 }
+
+use LoggedGuard::{Logged, LoggedWithException, LoggedAsAdmin, LoggedAsAdminWithException};
 
 impl<S> Transform<S> for LoggedGuard
 where
@@ -37,11 +42,36 @@ where
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        ok(LoggedGuardMiddleware {
-            service,
-            as_admin: self.as_admin,
-            except: self.except,
-        })
+        match *self {
+            Logged => {
+                ok(LoggedGuardMiddleware {
+                    service,
+                    as_admin: &[],
+                    except: &[],
+                })
+            },
+            LoggedWithException(except) => {
+                ok(LoggedGuardMiddleware {
+                    service,
+                    as_admin: &[],
+                    except: except,
+                })
+            },
+            LoggedAsAdmin(as_admin) => {
+                ok(LoggedGuardMiddleware {
+                    service,
+                    as_admin: as_admin,
+                    except: &[],
+                })
+            },
+            LoggedAsAdminWithException(as_admin, except) => {
+                ok(LoggedGuardMiddleware {
+                    service,
+                    as_admin: as_admin,
+                    except: except,
+                })
+            }
+        }
     }
 }
 
@@ -194,10 +224,7 @@ async fn get_login_template() -> Result<HttpResponse, Error> {
 pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
     cfg.service(
         web::resource(prefix)
-            .wrap(LoggedGuard {
-                as_admin: &[],
-                except: &[Method::POST],
-            })
+            .wrap(LoggedWithException(&[Method::POST]))
             .route(web::post().to(login))
             .route(web::delete().to(logout)),
     );

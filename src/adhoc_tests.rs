@@ -78,3 +78,24 @@ fn check_lg() {
         );
     }
 }
+
+#[test]
+fn enum_test() {
+    enum LG {
+        Logged,
+        LoggedAsAdmin(&'static [Method]),
+    }
+    use LG::{Logged, LoggedAsAdmin};
+
+    impl LG {
+        fn show(&self) {
+            match self {
+                Logged => println!("Just logged"),
+                LoggedAsAdmin(methods) => println!("Logged and need to be admin for {:?}", methods),
+            }
+        }
+    }
+
+    Logged.show();
+    LoggedAsAdmin(&[Method::PUT, Method::POST]).show();
+}

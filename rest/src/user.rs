@@ -5,7 +5,7 @@ use actix_web::{web, Error, HttpResponse};
 
 use dao::{NewUser, User};
 
-use crate::session::LoggedGuard;
+use crate::session::LoggedGuard::{Logged, LoggedAsAdmin};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct UserDTO {
@@ -130,36 +130,19 @@ async fn get_user_template() -> Result<HttpResponse, Error> {
 pub fn config(cfg: &mut web::ServiceConfig, prefix: &str) {
     cfg.service(
         web::resource(prefix)
-            .wrap(LoggedGuard {
-                as_admin: &[Method::PUT, Method::POST],
-                except: &[],
-            })
+            .wrap(LoggedAsAdmin(&[Method::PUT, Method::POST]))
             .route(web::get().to(get_users))
             .route(web::put().to(update_user))
             .route(web::post().to(update_user)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/template"))
-            .wrap(LoggedGuard {
-                as_admin: &[],
-                except: &[],
-            })
+            .wrap(Logged)
             .route(web::get().to(get_user_template)),
     );
     cfg.service(
         web::resource(format!("{}{}", prefix, "/{id}"))
-            .wrap(LoggedGuard {
-                as_admin: &[],
-                except: &[],
-            })
-            .route(web::get().to(get_user)),
-    );
-    cfg.service(
-        web::resource(format!("{}{}", prefix, "/{id}"))
-            .wrap(LoggedGuard {
-                as_admin: &[Method::DELETE],
-                except: &[],
-            })
+            .wrap(LoggedAsAdmin(&[Method::DELETE]))
             .route(web::get().to(get_user))
             .route(web::delete().to(delete_user)),
     );
