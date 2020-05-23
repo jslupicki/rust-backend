@@ -80,3 +80,30 @@ impl Crud<Salary> for SalaryDTO {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use diesel;
+    use diesel::result::DatabaseErrorKind::UniqueViolation;
+    use diesel::result::Error::DatabaseError;
+
+    use common_for_tests::*;
+
+    use super::*;
+
+    impl CrudTests<Salary> for SalaryDTO {}
+
+    #[test]
+    fn crud_operations_on_salary() {
+        let conn = &initialize();
+        let salary = SalaryDTO {
+            id: None,
+            employee_id: None,
+            from_date: NaiveDate::from_ymd(2015, 3, 14),
+            to_date: NaiveDate::from_ymd(2020, 5, 23),
+            amount: 0,
+            search_string: "some search".to_string(),
+        };
+        salary.test(conn);
+    }
+}

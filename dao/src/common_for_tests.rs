@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::io::stdout;
 
 #[cfg(test)]
@@ -5,6 +6,7 @@ use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
+use base_dao::Crud;
 use schema::employees::dsl::id as employee_id;
 use schema::employees::dsl::*;
 use schema::users::dsl::id as user_id;
@@ -46,4 +48,14 @@ pub fn assert_user_count(expected: i64, conn: &SqliteConnection) {
 pub fn assert_employee_count(expected: i64, conn: &SqliteConnection) {
     let employee_count = employee_count(conn);
     assert_eq!(employee_count, expected);
+}
+
+pub trait CrudTests<T>
+where
+    Self: Crud<T> + Debug,
+    T: Sized + Into<Self>,
+{
+    fn test(&self, conn: &SqliteConnection) {
+        info!("About to test {:#?}", &self);
+    }
 }
