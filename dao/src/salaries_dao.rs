@@ -56,7 +56,9 @@ impl From<&SalaryDTO> for NewSalary {
     }
 }
 
-impl Crud<Salary> for SalaryDTO {
+impl Crud for SalaryDTO {
+    type DbType = Salary;
+
     fn update(&mut self, other: &Self) {
         self.id = other.id;
     }
@@ -83,15 +85,11 @@ impl Crud<Salary> for SalaryDTO {
 
 #[cfg(test)]
 mod tests {
-    use diesel;
-    use diesel::result::DatabaseErrorKind::UniqueViolation;
-    use diesel::result::Error::DatabaseError;
-
     use common_for_tests::*;
 
     use super::*;
 
-    impl CrudTests<Salary> for SalaryDTO {}
+    impl CrudTests for SalaryDTO {}
 
     #[test]
     fn crud_operations_on_salary() {

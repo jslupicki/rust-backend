@@ -50,10 +50,9 @@ pub fn assert_employee_count(expected: i64, conn: &SqliteConnection) {
     assert_eq!(employee_count, expected);
 }
 
-pub trait CrudTests<T>
+pub trait CrudTests
 where
-    Self: Crud<T> + Debug,
-    T: Sized + Into<Self>,
+    Self: Crud + Debug,
 {
     fn test(&self, conn: &SqliteConnection) {
         info!("About to test {:#?}", &self);

@@ -4,23 +4,25 @@ use diesel::sqlite::SqliteConnection;
 use connection::get_connection;
 
 /// Implement CRUD operations
-pub trait Crud<T>
+pub trait Crud
 where
-    Self: Sized + From<T>,
+    Self: Sized,
 {
+    type DbType: Into<Self>;
+
     /// Update self from other - used in persist*()
     fn update(&mut self, other: &Self);
     /// Just retrieve T by id
-    fn get_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<T>;
+    fn get_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<Self::DbType>;
     /// Save or update - as result should return just saved record (NOT self)  
-    fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<T>;
+    fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<Self::DbType>;
 
     /// Save using provided connection - uses save_simple()
     fn save_in_transaction(&self, conn: &SqliteConnection) -> Option<Self> {
         conn.transaction(|| self.save_simple(conn))
             .optional()
             .unwrap_or(None)
-            .map(|s: T| s.into())
+            .map(|s: Self::DbType| s.into())
     }
 
     /// The same as save_in_transaction() but then update Self by result - useful when you want save new record without ID and update Self with ID from database
@@ -36,7 +38,7 @@ where
         Self::get_simple(id_to_find, conn)
             .optional()
             .unwrap_or(None)
-            .map(|s: T| s.into())
+            .map(|s: Self::DbType| s.into())
     }
 
     /// Get by ID but it use default connection - uses get_with_conn()
