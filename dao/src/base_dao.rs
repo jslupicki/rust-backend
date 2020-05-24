@@ -18,6 +18,8 @@ where
     fn get_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<Self::DbType>;
     /// Save or update - as result should return just saved record (NOT self)  
     fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<Self::DbType>;
+    /// Delete record
+    fn delete_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<usize>;
 
     /// Save using provided connection - uses save_simple()
     fn save_in_transaction(&self, conn: &SqliteConnection) -> Option<Self> {
@@ -43,6 +45,22 @@ where
             .map(|s: Self::DbType| s.into())
     }
 
+    /// Delete by ID and provided connection
+    fn delete_by_id_with_conn(id_to_find: i32, conn: &SqliteConnection) -> Option<usize> {
+        Self::delete_simple(id_to_find, conn)
+            .optional()
+            .unwrap_or(Some(0))
+    }
+
+    /// Delete by provided connection
+    fn delete_with_conn(&self, conn: &SqliteConnection) -> Option<usize> {
+        if let Some(id) = self.get_id() {
+            Self::delete_simple(id, conn).optional().unwrap_or(Some(0))
+        } else {
+            Some(0)
+        }
+    }
+
     /// Get by ID but it use default connection - uses get_with_conn()
     fn get(id_to_find: i32) -> Option<Self> {
         let conn: &SqliteConnection = &get_connection();
@@ -59,5 +77,17 @@ where
     fn persist(&mut self) -> Option<Self> {
         let conn: &SqliteConnection = &get_connection();
         self.persist_in_transaction(conn)
+    }
+
+    /// Delete by ID but it use default connection - uses delete_with_conn()
+    fn delete_by_id(id_to_find: i32) -> Option<usize> {
+        let conn: &SqliteConnection = &get_connection();
+        Self::delete_by_id_with_conn(id_to_find, conn)
+    }
+
+    /// Delete but it use default connection - uses delete_with_conn()
+    fn delete(&self) -> Option<usize> {
+        let conn: &SqliteConnection = &get_connection();
+        self.delete_with_conn(conn)
     }
 }

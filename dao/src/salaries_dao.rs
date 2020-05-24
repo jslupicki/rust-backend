@@ -72,18 +72,29 @@ impl Crud for SalaryDTO {
     }
 
     fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<Salary> {
-        if self.id.is_some() {
-            let self_id = self.id.unwrap();
-            diesel::update(salaries.filter(salary_id.eq(self_id)))
-                .set(Salary::from(&*self))
-                .execute(conn)
-                .and_then(|_| salaries.filter(salary_id.eq(self_id)).first(conn))
-        } else {
+        fn insert(s: &SalaryDTO, conn: &SqliteConnection) -> QueryResult<Salary> {
             insert_into(salaries)
-                .values(NewSalary::from(&*self))
+                .values(NewSalary::from(&*s))
                 .execute(conn)
                 .and_then(|_| salaries.order(salary_id.desc()).first(conn))
         }
+        if self.id.is_some() {
+            let self_id = self.id.unwrap();
+            let updated = diesel::update(salaries.filter(salary_id.eq(self_id)))
+                .set(Salary::from(&*self))
+                .execute(conn)?;
+            if updated == 0 {
+                insert(self, conn)
+            } else {
+                salaries.filter(salary_id.eq(self_id)).first(conn)
+            }
+        } else {
+            insert(self, conn)
+        }
+    }
+
+    fn delete_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<usize> {
+        diesel::delete(salaries.filter(salary_id.eq(id_to_find))).execute(conn)
     }
 }
 

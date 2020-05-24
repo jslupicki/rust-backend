@@ -79,6 +79,20 @@ where
         let persisted_id = persisted_id.unwrap();
         let self_id = self.get_id().unwrap();
         assert_eq!(self_id, persisted_id);
+        // Delete by id
+        let deleted = self.delete_with_conn(conn);
+        assert_eq!(deleted, Some(1));
+        let just_deleted = Self::get_with_conn(self_id, conn);
+        assert!(just_deleted.is_none());
+        // Delete by self
+        self.persist_in_transaction(conn);
+        let self_id = self.get_id().unwrap();
+        let persisted = Self::get_with_conn(self_id, conn);
+        assert!(persisted.is_some());
+        let deleted = self.delete_with_conn(conn);
+        assert_eq!(deleted, Some(1));
+        let just_deleted = Self::get_with_conn(self_id, conn);
+        assert!(just_deleted.is_none());
     }
 
     fn test_without_conn(&mut self) {
@@ -106,5 +120,19 @@ where
         let persisted_id = persisted_id.unwrap();
         let self_id = self.get_id().unwrap();
         assert_eq!(self_id, persisted_id);
+        // Delete by id
+        let deleted = self.delete();
+        assert_eq!(deleted, Some(1));
+        let just_deleted = Self::get(self_id);
+        assert!(just_deleted.is_none());
+        // Delete by self
+        self.persist();
+        let self_id = self.get_id().unwrap();
+        let persisted = Self::get(self_id);
+        assert!(persisted.is_some());
+        let deleted = self.delete();
+        assert_eq!(deleted, Some(1));
+        let just_deleted = Self::get(self_id);
+        assert!(just_deleted.is_none());
     }
 }
