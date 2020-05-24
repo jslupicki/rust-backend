@@ -59,6 +59,10 @@ impl From<&SalaryDTO> for NewSalary {
 impl Crud for SalaryDTO {
     type DbType = Salary;
 
+    fn get_id(&self) -> Option<i32> {
+        self.id
+    }
+
     fn update(&mut self, other: &Self) {
         self.id = other.id;
     }
@@ -94,14 +98,15 @@ mod tests {
     #[test]
     fn crud_operations_on_salary() {
         let conn = &initialize();
-        let salary = SalaryDTO {
+        let mut salary = SalaryDTO {
             id: None,
-            employee_id: None,
+            employee_id: Some(12),
             from_date: NaiveDate::from_ymd(2015, 3, 14),
             to_date: NaiveDate::from_ymd(2020, 5, 23),
             amount: 0,
             search_string: "some search".to_string(),
         };
         salary.test(conn);
+        //salary.test_without_conn();
     }
 }

@@ -54,7 +54,57 @@ pub trait CrudTests
 where
     Self: Crud + Debug,
 {
-    fn test(&self, conn: &SqliteConnection) {
+    fn test(&mut self, conn: &SqliteConnection) {
         info!("About to test {:#?}", &self);
+        // Save
+        let saved = self.save_in_transaction(conn);
+        assert!(saved.is_some());
+        let saved_id = saved.unwrap().get_id();
+        assert!(saved_id.is_some());
+        let saved_id = saved_id.unwrap();
+        // Get
+        let saved = Self::get_with_conn(saved_id, conn);
+        assert!(saved.is_some());
+        let saved_id2 = saved.unwrap().get_id();
+        assert!(saved_id2.is_some());
+        let saved_id2 = saved_id2.unwrap();
+        assert_eq!(saved_id, saved_id2);
+        // Persist
+        assert!(self.get_id().is_none());
+        let persisted = self.persist_in_transaction(conn);
+        assert!(persisted.is_some());
+        assert!(self.get_id().is_some());
+        let persisted_id = persisted.unwrap().get_id();
+        assert!(persisted_id.is_some());
+        let persisted_id = persisted_id.unwrap();
+        let self_id = self.get_id().unwrap();
+        assert_eq!(self_id, persisted_id);
+    }
+
+    fn test_without_conn(&mut self) {
+        info!("About to test {:#?}", &self);
+        // Save
+        let saved = self.save();
+        assert!(saved.is_some());
+        let saved_id = saved.unwrap().get_id();
+        assert!(saved_id.is_some());
+        let saved_id = saved_id.unwrap();
+        // Get
+        let saved = Self::get(saved_id);
+        assert!(saved.is_some());
+        let saved_id2 = saved.unwrap().get_id();
+        assert!(saved_id2.is_some());
+        let saved_id2 = saved_id2.unwrap();
+        assert_eq!(saved_id, saved_id2);
+        // Persist
+        assert!(self.get_id().is_none());
+        let persisted = self.persist();
+        assert!(persisted.is_some());
+        assert!(self.get_id().is_some());
+        let persisted_id = persisted.unwrap().get_id();
+        assert!(persisted_id.is_some());
+        let persisted_id = persisted_id.unwrap();
+        let self_id = self.get_id().unwrap();
+        assert_eq!(self_id, persisted_id);
     }
 }

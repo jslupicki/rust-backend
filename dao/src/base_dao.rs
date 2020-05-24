@@ -10,6 +10,8 @@ where
 {
     type DbType: Into<Self>;
 
+    /// Retrieve ID
+    fn get_id(&self) -> Option<i32>;
     /// Update self from other - used in persist*()
     fn update(&mut self, other: &Self);
     /// Just retrieve T by id
