@@ -3,7 +3,7 @@ use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
-use base_dao::Crud;
+use base_dao::{Crud, HaveId};
 use models::{NewSalary, Salary};
 use schema::salaries::dsl::id as salary_id;
 use schema::salaries::dsl::*;
@@ -56,27 +56,28 @@ impl From<&SalaryDTO> for NewSalary {
     }
 }
 
-impl Crud for SalaryDTO {
-    type DbType = Salary;
-
+impl HaveId for SalaryDTO {
     fn get_id(&self) -> Option<i32> {
         self.id
     }
+}
+
+impl Crud for SalaryDTO {
 
     fn update(&mut self, other: &Self) {
         self.id = other.id;
     }
 
-    fn get_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<Salary> {
-        salaries.filter(salary_id.eq(id_to_find)).first(conn)
+    fn get_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<SalaryDTO> {
+        salaries.filter(salary_id.eq(id_to_find)).first(conn).map(|s: Salary| SalaryDTO::from(s))
     }
 
-    fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<Salary> {
-        fn insert(s: &SalaryDTO, conn: &SqliteConnection) -> QueryResult<Salary> {
+    fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<SalaryDTO> {
+        fn insert(s: &SalaryDTO, conn: &SqliteConnection) -> QueryResult<SalaryDTO> {
             insert_into(salaries)
                 .values(NewSalary::from(&*s))
                 .execute(conn)
-                .and_then(|_| salaries.order(salary_id.desc()).first(conn))
+                .and_then(|_| salaries.order(salary_id.desc()).first(conn).map(|s: Salary| SalaryDTO::from(s)))
         }
         if self.id.is_some() {
             let self_id = self.id.unwrap();
@@ -86,7 +87,7 @@ impl Crud for SalaryDTO {
             if updated == 0 {
                 insert(self, conn)
             } else {
-                salaries.filter(salary_id.eq(self_id)).first(conn)
+                salaries.filter(salary_id.eq(self_id)).first(conn).map(|s: Salary| SalaryDTO::from(s))
             }
         } else {
             insert(self, conn)

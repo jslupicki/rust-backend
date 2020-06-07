@@ -3,21 +3,21 @@ use diesel::sqlite::SqliteConnection;
 
 use connection::get_connection;
 
+pub trait HaveId {
+    fn get_id(&self) -> Option<i32>;
+}
+
 /// Implement CRUD operations
 pub trait Crud
 where
-    Self: Sized,
+    Self: Sized + HaveId,
 {
-    type DbType: Into<Self>;
-
-    /// Retrieve ID
-    fn get_id(&self) -> Option<i32>;
     /// Update self from other - used in persist*()
     fn update(&mut self, other: &Self);
     /// Just retrieve T by id
-    fn get_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<Self::DbType>;
+    fn get_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<Self>;
     /// Save or update - as result should return just saved record (NOT self)  
-    fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<Self::DbType>;
+    fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<Self>;
     /// Delete record
     fn delete_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<usize>;
 
@@ -26,7 +26,6 @@ where
         conn.transaction(|| self.save_simple(conn))
             .optional()
             .unwrap_or(None)
-            .map(|s: Self::DbType| s.into())
     }
 
     /// The same as save_in_transaction() but then update Self by result - useful when you want save new record without ID and update Self with ID from database
@@ -42,7 +41,6 @@ where
         Self::get_simple(id_to_find, conn)
             .optional()
             .unwrap_or(None)
-            .map(|s: Self::DbType| s.into())
     }
 
     /// Delete by ID and provided connection
