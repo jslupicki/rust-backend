@@ -7,6 +7,8 @@ authors = ["jslupicki <jan@slupicki.com>"]
 [dependencies]
 log = "0.4.8"
 log4rs = "0.11.0"
+#Range could be check on https://docs.rs/crate/diesel/1.4.4/source/Cargo.toml
+libsqlite3-sys = { version = ">=0.9.1,<0.18.0", features = ["bundled"] }
 diesel = { version = "1.4.4", features = ["sqlite", "chrono"] }
 diesel_migrations = "1.4.0"
 dotenv = "0.15.0"
