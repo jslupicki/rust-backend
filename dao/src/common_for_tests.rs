@@ -6,7 +6,7 @@ use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
-use base_dao::Crud;
+use base_dao::{Crud, HaveId};
 use schema::employees::dsl::id as employee_id;
 use schema::employees::dsl::*;
 use schema::users::dsl::id as user_id;

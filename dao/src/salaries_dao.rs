@@ -102,22 +102,27 @@ impl Crud for SalaryDTO {
 #[cfg(test)]
 mod tests {
     use common_for_tests::*;
+    use std::io::stdout;
 
     use super::*;
+
+    embed_migrations!("test_data/salaries");
 
     impl CrudTests for SalaryDTO {}
 
     #[test]
     fn crud_operations_on_salary() {
         let conn = &initialize();
+        embedded_migrations::run_with_output(conn, &mut stdout()).unwrap();
         let mut salary = SalaryDTO {
             id: None,
-            employee_id: Some(12),
+            employee_id: Some(1),
             from_date: NaiveDate::from_ymd(2015, 3, 14),
             to_date: NaiveDate::from_ymd(2020, 5, 23),
             amount: 0,
             search_string: "some search".to_string(),
         };
+        //salary.save_simple(conn).unwrap();
         salary.test(conn);
         //salary.test_without_conn();
     }
