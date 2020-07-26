@@ -3,6 +3,7 @@ use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
+use base_dao::{Crud, HaveId};
 use connection::get_connection;
 use models::{Contact, NewContact};
 use schema::contacts::dsl::id as contact_id;
@@ -60,55 +61,45 @@ impl From<&ContactDTO> for NewContact {
     }
 }
 
-impl ContactDTO {
-    fn get_with_conn(id_to_find: i32, conn: &SqliteConnection) -> Option<Self> {
-        contacts
-            .filter(contact_id.eq(id_to_find))
-            .first(conn)
-            .optional()
-            .unwrap_or(None)
-            .map(|c: Contact| ContactDTO::from(c))
+impl HaveId for ContactDTO {
+    fn get_id(&self) -> Option<i32> {
+        self.id
+    }
+}
+
+impl Crud for ContactDTO {
+
+    fn update(&mut self, other: &Self) {
+        self.id = other.id;
     }
 
-    fn get(id_to_find: i32) -> Option<Self> {
-        let conn: &SqliteConnection = &get_connection();
-        Self::get_with_conn(id_to_find, conn)
+    fn get_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<ContactDTO> {
+        contacts.filter(contact_id.eq(id_to_find)).first(conn).map(|c: Contact| ContactDTO::from(c))
     }
 
-    fn save_with_conn(&self, conn: &SqliteConnection) -> Option<Self> {
-        conn.transaction(|| {
-            if self.id.is_some() {
-                let self_id = self.id.unwrap();
-                diesel::update(contacts.filter(contact_id.eq(self_id)))
-                    .set(Contact::from(&*self))
-                    .execute(conn)
-                    .and_then(|_| contacts.filter(contact_id.eq(self_id)).first(conn))
+    fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<ContactDTO> {
+        fn insert(c: &ContactDTO, conn: &SqliteConnection) -> QueryResult<ContactDTO> {
+            insert_into(contacts)
+                .values(NewContact::from(&*c))
+                .execute(conn)
+                .and_then(|_| contacts.order(contact_id.desc()).first(conn).map(|c: Contact| ContactDTO::from(c)))
+        }
+        if self.id.is_some() {
+            let self_id = self.id.unwrap();
+            let updated = diesel::update(contacts.filter(contact_id.eq(self_id)))
+                .set(Contact::from(&*self))
+                .execute(conn)?;
+            if updated == 0 {
+                insert(self, conn)
             } else {
-                insert_into(contacts)
-                    .values(NewContact::from(&*self))
-                    .execute(conn)
-                    .and_then(|_| contacts.order(contact_id.desc()).first(conn))
+                contacts.filter(contact_id.eq(self_id)).first(conn).map(|c: Contact| ContactDTO::from(c))
             }
-        })
-        .optional()
-        .unwrap_or(None)
-        .map(|c: Contact| c.into())
+        } else {
+            insert(self, conn)
+        }
     }
 
-    fn save(&self) -> Option<Self> {
-        let conn: &SqliteConnection = &get_connection();
-        self.save_with_conn(conn)
-    }
-
-    fn persist_with_conn(&mut self, conn: &SqliteConnection) -> Option<Self> {
-        self.save_with_conn(conn).map(|c| {
-            self.id = c.id;
-            c
-        })
-    }
-
-    fn persist(&mut self) -> Option<Self> {
-        let conn: &SqliteConnection = &get_connection();
-        self.persist_with_conn(conn)
+    fn delete_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<usize> {
+        diesel::delete(contacts.filter(contact_id.eq(id_to_find))).execute(conn)
     }
 }
