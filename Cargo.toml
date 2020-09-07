@@ -8,9 +8,9 @@ edition = "2018"
 dao = { path = "dao" }
 rest = { path = "rest" }
 log = "0.4.8"
-log4rs = "0.11.0"
+log4rs = "0.13.0"
 actix-web = "2.0.0"
-actix-rt = "1.0"
+actix-rt = "1.1.1"
 
 [dev-dependencies]
 diesel = { version = "1.4.4", features = ["sqlite", "chrono"] }
