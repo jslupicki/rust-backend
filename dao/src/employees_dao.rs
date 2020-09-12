@@ -4,13 +4,13 @@ use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
-use contacts_dao::ContactDTO;
-use models::{Employee, NewEmployee, NewSalary, Salary};
-use salaries_dao::SalaryDTO;
-use schema::employees::dsl::id as employee_id;
-use schema::employees::dsl::*;
-use schema::salaries::dsl::id as salary_id;
-use schema::salaries::dsl::*;
+use crate::contacts_dao::ContactDTO;
+use crate::models::{Employee, NewEmployee, NewSalary, Salary};
+use crate::salaries_dao::SalaryDTO;
+use crate::schema::employees::dsl::id as employee_id;
+use crate::schema::employees::dsl::*;
+use crate::schema::salaries::dsl::id as salary_id;
+use crate::schema::salaries::dsl::*;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct EmployeeDTO {
@@ -81,8 +81,8 @@ pub fn get_salary(id_to_find: i32, conn: &SqliteConnection) -> Option<Salary> {
 mod tests {
     use chrono::NaiveDate;
 
-    use base_dao::Crud;
-    use common_for_tests::*;
+    use crate::base_dao::Crud;
+    use crate::common_for_tests::*;
 
     use super::*;
 

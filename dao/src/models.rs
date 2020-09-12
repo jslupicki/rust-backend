@@ -1,6 +1,6 @@
 use chrono::NaiveDate;
 
-use schema::{contacts, employees, salaries, users};
+use crate::schema::{contacts, employees, salaries, users};
 
 #[derive(Queryable, AsChangeset, Debug, Serialize)]
 pub struct User {

@@ -1,7 +1,7 @@
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
-use connection::get_connection;
+use crate::connection::get_connection;
 
 pub trait HaveId {
     fn get_id(&self) -> Option<i32>;

@@ -3,10 +3,10 @@ use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
-use base_dao::{Crud, HaveId};
-use models::{NewSalary, Salary};
-use schema::salaries::dsl::id as salary_id;
-use schema::salaries::dsl::*;
+use crate::base_dao::{Crud, HaveId};
+use crate::models::{NewSalary, Salary};
+use crate::schema::salaries::dsl::id as salary_id;
+use crate::schema::salaries::dsl::*;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SalaryDTO {
@@ -101,7 +101,7 @@ impl Crud for SalaryDTO {
 
 #[cfg(test)]
 mod tests {
-    use common_for_tests::*;
+    use crate::common_for_tests::*;
     use std::io::stdout;
 
     use super::*;

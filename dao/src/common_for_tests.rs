@@ -6,11 +6,11 @@ use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
-use base_dao::{Crud, HaveId};
-use schema::employees::dsl::id as employee_id;
-use schema::employees::dsl::*;
-use schema::users::dsl::id as user_id;
-use schema::users::dsl::*;
+use crate::base_dao::{Crud, HaveId};
+use crate::schema::employees::dsl::id as employee_id;
+use crate::schema::employees::dsl::*;
+use crate::schema::users::dsl::id as user_id;
+use crate::schema::users::dsl::*;
 
 static TEST_DB_NAME: &str = ":memory:";
 

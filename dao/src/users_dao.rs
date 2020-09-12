@@ -3,8 +3,8 @@ use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use sha3::{Digest, Sha3_256};
 
-use models::{NewUser, User};
-use schema::users::dsl::*;
+use crate::models::{NewUser, User};
+use crate::schema::users::dsl::*;
 
 pub fn create_user(new_user: &NewUser, conn: &SqliteConnection) -> QueryResult<User> {
     conn.transaction(|| {
@@ -57,9 +57,9 @@ pub fn validate_user(
 }
 
 pub fn hash(text: &String) -> String {
-    let mut h = Sha3_256::default();
-    h.input(text.as_bytes());
-    format!("{:x}", h.result())
+    let mut h = Sha3_256::new();
+    h.update(text.as_bytes());
+    format!("{:x}", h.finalize())
 }
 
 #[cfg(test)]
@@ -68,7 +68,7 @@ mod tests {
     use diesel::result::DatabaseErrorKind::UniqueViolation;
     use diesel::result::Error::DatabaseError;
 
-    use common_for_tests::*;
+    use crate::common_for_tests::*;
 
     use super::*;
 

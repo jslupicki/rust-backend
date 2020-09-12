@@ -3,11 +3,11 @@ use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
-use base_dao::{Crud, HaveId};
-use connection::get_connection;
-use models::{Contact, NewContact};
-use schema::contacts::dsl::id as contact_id;
-use schema::contacts::dsl::*;
+use crate::base_dao::{Crud, HaveId};
+use crate::connection::get_connection;
+use crate::models::{Contact, NewContact};
+use crate::schema::contacts::dsl::id as contact_id;
+use crate::schema::contacts::dsl::*;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ContactDTO {
