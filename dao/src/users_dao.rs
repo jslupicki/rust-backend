@@ -57,9 +57,7 @@ pub fn validate_user(
 }
 
 pub fn hash(text: &String) -> String {
-    let mut h = Sha3_256::new();
-    h.update(text.as_bytes());
-    format!("{:x}", h.finalize())
+    format!("{:x}", Sha3_256::digest(text.as_bytes()))
 }
 
 #[cfg(test)]
