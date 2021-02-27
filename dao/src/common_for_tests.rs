@@ -6,7 +6,7 @@ use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
-use crate::base_dao::{Crud, HaveId};
+use crate::base_dao::Crud;
 use crate::schema::employees::dsl::id as employee_id;
 use crate::schema::employees::dsl::*;
 use crate::schema::users::dsl::id as user_id;

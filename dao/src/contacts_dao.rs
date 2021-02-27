@@ -4,7 +4,6 @@ use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
 use crate::base_dao::{Crud, HaveId};
-use crate::connection::get_connection;
 use crate::models::{Contact, NewContact};
 use crate::schema::contacts::dsl::id as contact_id;
 use crate::schema::contacts::dsl::*;
@@ -68,13 +67,15 @@ impl HaveId for ContactDTO {
 }
 
 impl Crud for ContactDTO {
-
     fn update(&mut self, other: &Self) {
         self.id = other.id;
     }
 
     fn get_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<ContactDTO> {
-        contacts.filter(contact_id.eq(id_to_find)).first(conn).map(|c: Contact| ContactDTO::from(c))
+        contacts
+            .filter(contact_id.eq(id_to_find))
+            .first(conn)
+            .map(|c: Contact| ContactDTO::from(c))
     }
 
     fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<ContactDTO> {
@@ -82,7 +83,12 @@ impl Crud for ContactDTO {
             insert_into(contacts)
                 .values(NewContact::from(&*c))
                 .execute(conn)
-                .and_then(|_| contacts.order(contact_id.desc()).first(conn).map(|c: Contact| ContactDTO::from(c)))
+                .and_then(|_| {
+                    contacts
+                        .order(contact_id.desc())
+                        .first(conn)
+                        .map(|c: Contact| ContactDTO::from(c))
+                })
         }
         if self.id.is_some() {
             let self_id = self.id.unwrap();
@@ -92,7 +98,10 @@ impl Crud for ContactDTO {
             if updated == 0 {
                 insert(self, conn)
             } else {
-                contacts.filter(contact_id.eq(self_id)).first(conn).map(|c: Contact| ContactDTO::from(c))
+                contacts
+                    .filter(contact_id.eq(self_id))
+                    .first(conn)
+                    .map(|c: Contact| ContactDTO::from(c))
             }
         } else {
             insert(self, conn)

@@ -27,7 +27,7 @@ pub enum LoggedGuard {
     LoggedAsAdminWithException(&'static [Method], &'static [Method]),
 }
 
-use LoggedGuard::{Logged, LoggedWithException, LoggedAsAdmin, LoggedAsAdminWithException};
+use LoggedGuard::{Logged, LoggedAsAdmin, LoggedAsAdminWithException, LoggedWithException};
 
 impl<S> Transform<S> for LoggedGuard
 where
@@ -43,34 +43,26 @@ where
 
     fn new_transform(&self, service: S) -> Self::Future {
         match *self {
-            Logged => {
-                ok(LoggedGuardMiddleware {
-                    service,
-                    as_admin: &[],
-                    except: &[],
-                })
-            },
-            LoggedWithException(except) => {
-                ok(LoggedGuardMiddleware {
-                    service,
-                    as_admin: &[],
-                    except: except,
-                })
-            },
-            LoggedAsAdmin(as_admin) => {
-                ok(LoggedGuardMiddleware {
-                    service,
-                    as_admin: as_admin,
-                    except: &[],
-                })
-            },
-            LoggedAsAdminWithException(as_admin, except) => {
-                ok(LoggedGuardMiddleware {
-                    service,
-                    as_admin: as_admin,
-                    except: except,
-                })
-            }
+            Logged => ok(LoggedGuardMiddleware {
+                service,
+                as_admin: &[],
+                except: &[],
+            }),
+            LoggedWithException(except) => ok(LoggedGuardMiddleware {
+                service,
+                as_admin: &[],
+                except: except,
+            }),
+            LoggedAsAdmin(as_admin) => ok(LoggedGuardMiddleware {
+                service,
+                as_admin: as_admin,
+                except: &[],
+            }),
+            LoggedAsAdminWithException(as_admin, except) => ok(LoggedGuardMiddleware {
+                service,
+                as_admin: as_admin,
+                except: except,
+            }),
         }
     }
 }
