@@ -112,3 +112,33 @@ impl Crud for ContactDTO {
         diesel::delete(contacts.filter(contact_id.eq(id_to_find))).execute(conn)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::common_for_tests::*;
+    use std::io::stdout;
+
+    use super::*;
+
+    embed_migrations!("test_data/contacts");
+
+    impl CrudTests for ContactDTO {}
+
+    #[test]
+    fn crud_operations_on_contacts() {
+        let conn = &initialize();
+        embedded_migrations::run_with_output(conn, &mut stdout()).unwrap();
+        let mut contact = ContactDTO {
+            id: None,
+            employee_id: Some(1),
+            from_date: NaiveDate::from_ymd(2015, 3, 14),
+            to_date: NaiveDate::from_ymd(2020, 5, 23),
+            phone: "123456".to_string(),
+            address: Some("Some contact address".to_string()),
+            search_string: "some search for contact".to_string(),
+        };
+        //salary.save_simple(conn).unwrap();
+        contact.test(conn);
+        //salary.test_without_conn();
+    }
+}
