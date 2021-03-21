@@ -8,6 +8,7 @@ use crate::base_dao::{Crud, HaveId};
 use crate::contacts_dao::ContactDTO;
 use crate::models::{Employee, NewEmployee, NewSalary, Salary};
 use crate::salaries_dao::SalaryDTO;
+use crate::schema::contacts::dsl::contacts;
 use crate::schema::employees::dsl::id as employee_id;
 use crate::schema::employees::dsl::*;
 use crate::schema::salaries::dsl::id as salary_id;
@@ -71,7 +72,18 @@ impl Crud for EmployeeDTO {
     }
 
     fn delete_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<usize> {
-        unimplemented!()
+        use crate::schema::contacts::columns::employee_id as contacts_employee_id;
+        use crate::schema::salaries::columns::employee_id as salaries_employee_id;
+
+        diesel::delete(salaries)
+            .filter(salaries_employee_id.eq(id_to_find))
+            .execute(conn)?;
+        diesel::delete(contacts)
+            .filter(contacts_employee_id.eq(id_to_find))
+            .execute(conn)?;
+        diesel::delete(employees)
+            .filter(employee_id.eq(id_to_find))
+            .execute(conn)
     }
 }
 
@@ -221,6 +233,15 @@ mod tests {
 
         let e_dto = EmployeeDTO::get_with_conn(new_employee.id, conn);
         println!("e_dto: {:?}", e_dto);
+
+        let count = e_dto.unwrap().delete_with_conn(conn);
+        println!("Removed employee: {:?}", count);
+
+        let salaries_in_db: Vec<Salary> = salaries.load(conn).unwrap();
+        let contacts_in_db: Vec<Contact> = contacts.load(conn).unwrap();
+
+        println!("In DB left salaries: {:?}", salaries_in_db);
+        println!("In DB left contacts: {:?}", contacts_in_db);
     }
 
     #[test]
