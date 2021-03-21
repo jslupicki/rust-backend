@@ -23,7 +23,7 @@ impl From<Contact> for ContactDTO {
     fn from(c: Contact) -> Self {
         ContactDTO {
             id: Some(c.id),
-            employee_id: Some(c.id),
+            employee_id: Some(c.employee_id),
             from_date: c.from_date,
             to_date: c.to_date,
             address: c.address,
@@ -115,8 +115,9 @@ impl Crud for ContactDTO {
 
 #[cfg(test)]
 mod tests {
-    use crate::common_for_tests::*;
     use std::io::stdout;
+
+    use crate::common_for_tests::*;
 
     use super::*;
 

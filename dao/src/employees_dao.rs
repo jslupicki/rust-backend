@@ -4,6 +4,7 @@ use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
+use crate::base_dao::{Crud, HaveId};
 use crate::contacts_dao::ContactDTO;
 use crate::models::{Employee, NewEmployee, NewSalary, Salary};
 use crate::salaries_dao::SalaryDTO;
@@ -11,6 +12,7 @@ use crate::schema::employees::dsl::id as employee_id;
 use crate::schema::employees::dsl::*;
 use crate::schema::salaries::dsl::id as salary_id;
 use crate::schema::salaries::dsl::*;
+use crate::Contact;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct EmployeeDTO {
@@ -20,6 +22,57 @@ struct EmployeeDTO {
     search_string: String,
     salaries: HashSet<SalaryDTO>,
     contacts: HashSet<ContactDTO>,
+}
+
+impl From<Employee> for EmployeeDTO {
+    fn from(e: Employee) -> Self {
+        EmployeeDTO {
+            id: Some(e.id),
+            first_name: e.first_name,
+            last_name: e.last_name,
+            search_string: e.search_string,
+            salaries: Default::default(),
+            contacts: Default::default(),
+        }
+    }
+}
+
+impl HaveId for EmployeeDTO {
+    fn get_id(&self) -> Option<i32> {
+        self.id
+    }
+}
+
+impl Crud for EmployeeDTO {
+    fn update(&mut self, other: &Self) {
+        self.id = other.id;
+    }
+
+    fn get_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<Self> {
+        employees
+            .filter(employee_id.eq(id_to_find))
+            .first(conn)
+            .map(|e: Employee| {
+                let sv: Vec<Salary> = Salary::belonging_to(&e).load(conn).unwrap();
+                let cv: Vec<Contact> = Contact::belonging_to(&e).load(conn).unwrap();
+                let mut e_dto = EmployeeDTO::from(e);
+                for s in sv {
+                    e_dto.salaries.insert(SalaryDTO::from(s));
+                }
+                for c in cv {
+                    e_dto.contacts.insert(ContactDTO::from(c));
+                }
+                e_dto
+            })
+    }
+
+    fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<Self> {
+        unimplemented!()
+    }
+
+    fn delete_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<usize> {
+        unimplemented!()
+    }
 }
 
 pub fn create_employee(
@@ -83,8 +136,92 @@ mod tests {
 
     use crate::base_dao::Crud;
     use crate::common_for_tests::*;
+    use crate::schema::contacts::dsl::contacts;
+    use crate::{Contact, NewContact};
 
     use super::*;
+
+    #[test]
+    fn check_get_simple() {
+        let conn = &initialize();
+
+        let new_employee: Employee = insert_into(employees)
+            .values(NewEmployee {
+                first_name: "Jan".to_string(),
+                last_name: "Kowalski".to_string(),
+                search_string: "".to_string(),
+            })
+            .execute(conn)
+            .and_then(|_| employees.order(employee_id.desc()).first(conn))
+            .unwrap();
+        let new_contacts = vec![
+            NewContact {
+                employee_id: new_employee.id,
+                from_date: NaiveDate::from_ymd(2015, 3, 14),
+                to_date: NaiveDate::from_ymd(2015, 3, 15),
+                phone: "123456".to_string(),
+                address: None,
+                search_string: "".to_string(),
+            },
+            NewContact {
+                employee_id: new_employee.id,
+                from_date: NaiveDate::from_ymd(2015, 3, 16),
+                to_date: NaiveDate::from_ymd(2015, 3, 17),
+                phone: "234567".to_string(),
+                address: None,
+                search_string: "".to_string(),
+            },
+        ];
+        insert_into(contacts)
+            .values(&new_contacts)
+            .execute(conn)
+            .unwrap();
+        let new_salaries = vec![
+            NewSalary {
+                employee_id: new_employee.id,
+                from_date: NaiveDate::from_ymd(2015, 3, 14),
+                to_date: NaiveDate::from_ymd(2015, 3, 15),
+                amount: 1,
+                search_string: "".to_string(),
+            },
+            NewSalary {
+                employee_id: new_employee.id,
+                from_date: NaiveDate::from_ymd(2015, 3, 16),
+                to_date: NaiveDate::from_ymd(2015, 3, 17),
+                amount: 2,
+                search_string: "".to_string(),
+            },
+        ];
+        insert_into(salaries)
+            .values(&new_salaries)
+            .execute(conn)
+            .unwrap();
+
+        let results: Vec<(Employee, Contact, Salary)> = employees
+            .inner_join(contacts)
+            .inner_join(salaries)
+            .filter(employee_id.eq(new_employee.id))
+            .load(conn)
+            .unwrap();
+
+        for (employee, contact, salary) in results {
+            println!("e: {:?} -> c: {:?}, s: {:?}", employee, contact, salary);
+        }
+
+        let salaries_of_empleyee: Vec<Salary> =
+            Salary::belonging_to(&new_employee).load(conn).unwrap();
+        for salary in salaries_of_empleyee {
+            println!("Salary: {:?}", salary);
+        }
+        let contacts_of_employee: Vec<Contact> =
+            Contact::belonging_to(&new_employee).load(conn).unwrap();
+        for contact in contacts_of_employee {
+            println!("Contact: {:?}", contact);
+        }
+
+        let e_dto = EmployeeDTO::get_with_conn(new_employee.id, conn);
+        println!("e_dto: {:?}", e_dto);
+    }
 
     #[test]
     fn check_create_employee() {

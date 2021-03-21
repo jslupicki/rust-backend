@@ -18,7 +18,7 @@ pub struct NewUser {
     pub is_admin: bool,
 }
 
-#[derive(Queryable, AsChangeset, Debug, Serialize)]
+#[derive(Queryable, AsChangeset, Debug, Serialize, Identifiable)]
 pub struct Employee {
     pub id: i32,
     pub first_name: String,
@@ -34,7 +34,8 @@ pub struct NewEmployee {
     pub search_string: String,
 }
 
-#[derive(Queryable, AsChangeset, Debug, Serialize)]
+#[derive(Queryable, AsChangeset, Debug, Serialize, Associations, Identifiable)]
+#[belongs_to(Employee)]
 #[table_name = "salaries"]
 pub struct Salary {
     pub id: i32,
@@ -55,7 +56,9 @@ pub struct NewSalary {
     pub search_string: String,
 }
 
-#[derive(Queryable, AsChangeset, Debug, Serialize)]
+#[derive(Queryable, AsChangeset, Debug, Serialize, Associations, Identifiable)]
+#[belongs_to(Employee)]
+#[table_name = "contacts"]
 pub struct Contact {
     pub id: i32,
     pub employee_id: i32,

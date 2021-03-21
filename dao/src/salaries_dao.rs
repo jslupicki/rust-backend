@@ -63,13 +63,15 @@ impl HaveId for SalaryDTO {
 }
 
 impl Crud for SalaryDTO {
-
     fn update(&mut self, other: &Self) {
         self.id = other.id;
     }
 
     fn get_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<SalaryDTO> {
-        salaries.filter(salary_id.eq(id_to_find)).first(conn).map(|s: Salary| SalaryDTO::from(s))
+        salaries
+            .filter(salary_id.eq(id_to_find))
+            .first(conn)
+            .map(|s: Salary| SalaryDTO::from(s))
     }
 
     fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<SalaryDTO> {
@@ -77,7 +79,12 @@ impl Crud for SalaryDTO {
             insert_into(salaries)
                 .values(NewSalary::from(&*s))
                 .execute(conn)
-                .and_then(|_| salaries.order(salary_id.desc()).first(conn).map(|s: Salary| SalaryDTO::from(s)))
+                .and_then(|_| {
+                    salaries
+                        .order(salary_id.desc())
+                        .first(conn)
+                        .map(|s: Salary| SalaryDTO::from(s))
+                })
         }
         if self.id.is_some() {
             let self_id = self.id.unwrap();
@@ -87,7 +94,10 @@ impl Crud for SalaryDTO {
             if updated == 0 {
                 insert(self, conn)
             } else {
-                salaries.filter(salary_id.eq(self_id)).first(conn).map(|s: Salary| SalaryDTO::from(s))
+                salaries
+                    .filter(salary_id.eq(self_id))
+                    .first(conn)
+                    .map(|s: Salary| SalaryDTO::from(s))
             }
         } else {
             insert(self, conn)
@@ -101,8 +111,9 @@ impl Crud for SalaryDTO {
 
 #[cfg(test)]
 mod tests {
-    use crate::common_for_tests::*;
     use std::io::stdout;
+
+    use crate::common_for_tests::*;
 
     use super::*;
 
