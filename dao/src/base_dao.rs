@@ -66,12 +66,14 @@ where
     }
 
     /// Save but it use default connection - uses save_in_transaction()
+    /// It return saved value. NOT mutate self
     fn save(&self) -> Option<Self> {
         let conn: &SqliteConnection = &get_connection();
         self.save_in_transaction(conn)
     }
 
     /// Persist but it use default connection - uses persist_in_transaction()
+    /// It return saved value. MUTATE self
     fn persist(&mut self) -> Option<Self> {
         let conn: &SqliteConnection = &get_connection();
         self.persist_in_transaction(conn)

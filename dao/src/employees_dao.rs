@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use diesel::dsl::*;
 use diesel::prelude::*;
+use diesel::result::Error;
 use diesel::sqlite::SqliteConnection;
 
 use crate::base_dao::{Crud, HaveId};
@@ -16,13 +17,13 @@ use crate::schema::salaries::dsl::*;
 use crate::Contact;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-struct EmployeeDTO {
-    id: Option<i32>,
-    first_name: String,
-    last_name: String,
-    search_string: String,
-    salaries: HashSet<SalaryDTO>,
-    contacts: HashSet<ContactDTO>,
+pub struct EmployeeDTO {
+    pub id: Option<i32>,
+    pub first_name: String,
+    pub last_name: String,
+    pub search_string: String,
+    pub salaries: Vec<SalaryDTO>,
+    pub contacts: Vec<ContactDTO>,
 }
 
 impl From<Employee> for EmployeeDTO {
@@ -34,6 +35,27 @@ impl From<Employee> for EmployeeDTO {
             search_string: e.search_string,
             salaries: Default::default(),
             contacts: Default::default(),
+        }
+    }
+}
+
+impl From<&EmployeeDTO> for Employee {
+    fn from(employee_dto: &EmployeeDTO) -> Self {
+        Employee {
+            id: employee_dto.id.unwrap(),
+            first_name: employee_dto.first_name.clone(),
+            last_name: employee_dto.last_name.clone(),
+            search_string: employee_dto.search_string.clone(),
+        }
+    }
+}
+
+impl From<&EmployeeDTO> for NewEmployee {
+    fn from(employee_dto: &EmployeeDTO) -> Self {
+        NewEmployee {
+            first_name: employee_dto.first_name.clone(),
+            last_name: employee_dto.last_name.clone(),
+            search_string: employee_dto.search_string.clone(),
         }
     }
 }
@@ -58,17 +80,60 @@ impl Crud for EmployeeDTO {
                 let cv: Vec<Contact> = Contact::belonging_to(&e).load(conn).unwrap();
                 let mut e_dto = EmployeeDTO::from(e);
                 for s in sv {
-                    e_dto.salaries.insert(SalaryDTO::from(s));
+                    e_dto.salaries.push(SalaryDTO::from(s));
                 }
                 for c in cv {
-                    e_dto.contacts.insert(ContactDTO::from(c));
+                    e_dto.contacts.push(ContactDTO::from(c));
                 }
                 e_dto
             })
     }
 
     fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<Self> {
-        unimplemented!()
+        fn insert(e: &EmployeeDTO, conn: &SqliteConnection) -> QueryResult<EmployeeDTO> {
+            insert_into(employees)
+                .values(NewEmployee::from(&*e))
+                .execute(conn)
+                .and_then(|_| {
+                    employees
+                        .order(employee_id.desc())
+                        .first(conn)
+                        .map(|e: Employee| EmployeeDTO::from(e))
+                })
+        }
+
+        let result = if self.id.is_some() {
+            let self_id = self.id.unwrap();
+            let updated = diesel::update(employees.filter(employee_id.eq(self_id)))
+                .set(Employee::from(&*self))
+                .execute(conn)?;
+            if updated == 0 {
+                insert(self, conn)
+            } else {
+                employees
+                    .filter(employee_id.eq(self_id))
+                    .first(conn)
+                    .map(|e: Employee| EmployeeDTO::from(e))
+            }
+        } else {
+            insert(self, conn)
+        };
+        match result {
+            Ok(mut e_dto) => {
+                for s in &self.salaries {
+                    let mut new_s = s.clone();
+                    new_s.employee_id = e_dto.id;
+                    e_dto.salaries.push(new_s.save_simple(conn)?);
+                }
+                for c in &self.contacts {
+                    let mut new_c = c.clone();
+                    new_c.employee_id = e_dto.id;
+                    e_dto.contacts.push(new_c.save_simple(conn)?);
+                }
+                Ok(e_dto)
+            }
+            Err(_) => result,
+        }
     }
 
     fn delete_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<usize> {
@@ -242,6 +307,55 @@ mod tests {
 
         println!("In DB left salaries: {:?}", salaries_in_db);
         println!("In DB left contacts: {:?}", contacts_in_db);
+
+        let new_e_dto = EmployeeDTO {
+            id: None,
+            first_name: "Bartlomiej".to_string(),
+            last_name: "Nowak".to_string(),
+            search_string: "".to_string(),
+            salaries: vec![
+                SalaryDTO {
+                    id: None,
+                    employee_id: None,
+                    from_date: NaiveDate::from_ymd(2015, 3, 14),
+                    to_date: NaiveDate::from_ymd(2015, 3, 15),
+                    amount: 1,
+                    search_string: "".to_string(),
+                },
+                SalaryDTO {
+                    id: None,
+                    employee_id: None,
+                    from_date: NaiveDate::from_ymd(2015, 3, 16),
+                    to_date: NaiveDate::from_ymd(2015, 3, 17),
+                    amount: 2,
+                    search_string: "".to_string(),
+                },
+            ],
+            contacts: vec![
+                ContactDTO {
+                    id: None,
+                    employee_id: None,
+                    from_date: NaiveDate::from_ymd(2015, 3, 14),
+                    to_date: NaiveDate::from_ymd(2015, 3, 15),
+                    phone: "123456".to_string(),
+                    address: Some("Address 1".to_string()),
+                    search_string: "".to_string(),
+                },
+                ContactDTO {
+                    id: None,
+                    employee_id: None,
+                    from_date: NaiveDate::from_ymd(2015, 3, 16),
+                    to_date: NaiveDate::from_ymd(2015, 3, 17),
+                    phone: "234567".to_string(),
+                    address: Some("Address 2".to_string()),
+                    search_string: "".to_string(),
+                },
+            ],
+        };
+        let saved_new_e_dto = new_e_dto.save_simple(conn);
+
+        println!("new_e_dto: {:?}", new_e_dto);
+        println!("saved_new_e_dto: {:?}", saved_new_e_dto);
     }
 
     #[test]

@@ -10,13 +10,13 @@ use crate::schema::contacts::dsl::*;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ContactDTO {
-    id: Option<i32>,
-    employee_id: Option<i32>,
-    from_date: NaiveDate,
-    to_date: NaiveDate,
-    phone: String,
-    address: Option<String>,
-    search_string: String,
+    pub id: Option<i32>,
+    pub employee_id: Option<i32>,
+    pub from_date: NaiveDate,
+    pub to_date: NaiveDate,
+    pub phone: String,
+    pub address: Option<String>,
+    pub search_string: String,
 }
 
 impl From<Contact> for ContactDTO {
