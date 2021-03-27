@@ -1,4 +1,7 @@
-[![Build Status](https://github.com/jslupicki/rust-backend/actions/workflows/Rust/badge.svg?branch=master)](https://github.com/jslupicki/rust-backend/actions)
+Rust backend
+========
+
+[![Build Status](https://github.com/jslupicki/rust-backend/workflows/Rust/badge.svg?branch=master)](https://github.com/jslupicki/rust-backend/actions)
  
 ### This is my toy project to learn Rust.
 
