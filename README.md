@@ -1,3 +1,5 @@
+[![Build Status](https://github.com/jslupicki/rust-backend/actions/workflows/Rust/badge.svg?branch=master)](https://github.com/jslupicki/rust-backend/actions)
+ 
 ### This is my toy project to learn Rust.
 
 Some time ago I've participated in recruit process in Solteq. I've ended up in different company but
