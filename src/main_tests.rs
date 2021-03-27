@@ -1,4 +1,5 @@
-use actix_http::http::{Cookie, StatusCode};
+use actix_http::cookie::Cookie;
+use actix_http::http::StatusCode;
 use actix_http::Request;
 use actix_service::Service;
 use actix_web::dev::ServiceResponse;

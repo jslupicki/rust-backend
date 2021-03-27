@@ -1,20 +1,15 @@
-use std::collections::HashSet;
-
 use diesel::dsl::*;
 use diesel::prelude::*;
-use diesel::result::Error;
 use diesel::sqlite::SqliteConnection;
 
 use crate::base_dao::{Crud, HaveId};
 use crate::contacts_dao::ContactDTO;
-use crate::models::{Employee, NewEmployee, NewSalary, Salary};
+use crate::models::{Contact, Employee, NewEmployee, Salary};
 use crate::salaries_dao::SalaryDTO;
 use crate::schema::contacts::dsl::contacts;
-use crate::schema::employees::dsl::id as employee_id;
 use crate::schema::employees::dsl::*;
-use crate::schema::salaries::dsl::id as salary_id;
+use crate::schema::employees::dsl::id as employee_id;
 use crate::schema::salaries::dsl::*;
-use crate::Contact;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct EmployeeDTO {

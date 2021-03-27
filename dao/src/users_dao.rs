@@ -1,7 +1,6 @@
 use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
-use sha3::{Digest, Sha3_256};
 
 use crate::models::{NewUser, User};
 use crate::schema::users::dsl::*;
@@ -56,15 +55,12 @@ pub fn validate_user(
         .unwrap_or(None)
 }
 
-pub fn hash(text: &String) -> String {
-    format!("{:x}", Sha3_256::digest(text.as_bytes()))
-}
-
 #[cfg(test)]
 mod tests {
     use diesel;
     use diesel::result::DatabaseErrorKind::UniqueViolation;
     use diesel::result::Error::DatabaseError;
+    use sha3::{Digest, Sha3_256};
 
     use crate::common_for_tests::*;
 
@@ -178,7 +174,8 @@ mod tests {
             }
             _ => assert!(
                 false,
-                format!("Should report: UNIQUE constraint failed: users.username and instead I got {:?}", rows_inserted)
+                "Should report: UNIQUE constraint failed: users.username and instead I got {:?}",
+                rows_inserted
             ),
         }
     }
@@ -234,5 +231,9 @@ mod tests {
         assert_eq!(deleted_rows.unwrap(), 1);
         let admin_in_db = get_user(2, conn);
         assert!(admin_in_db.is_none());
+    }
+
+    fn hash(text: &String) -> String {
+        format!("{:x}", Sha3_256::digest(text.as_bytes()))
     }
 }
