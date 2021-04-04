@@ -12,8 +12,8 @@ pub trait Crud
 where
     Self: Sized + HaveId,
 {
-    /// Update self from other - used in persist*()
-    fn update(&mut self, other: &Self);
+    /// Update self from persisted - used in persist*()
+    fn update(&mut self, persisted: &Self);
     /// Just retrieve T by id
     fn get_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<Self>;
     /// Save or update - as result should return just saved record (NOT self)  
@@ -89,5 +89,21 @@ where
     fn delete(&self) -> Option<usize> {
         let conn: &SqliteConnection = &get_connection();
         self.delete_with_conn(conn)
+    }
+}
+
+pub trait Searchable
+where
+    Self: Sized,
+{
+    fn get_all(conn: &SqliteConnection) -> Vec<Self>;
+
+    fn search(s: &str, conn: &SqliteConnection) -> Vec<Self>;
+
+    fn filter<P>(predicate: P, conn: &SqliteConnection) -> Vec<Self>
+    where
+        P: FnMut(&Self) -> bool,
+    {
+        Self::get_all(conn).into_iter().filter(predicate).collect()
     }
 }

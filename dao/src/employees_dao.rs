@@ -2,13 +2,13 @@ use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
-use crate::base_dao::{Crud, HaveId};
+use crate::base_dao::{Crud, HaveId, Searchable};
 use crate::contacts_dao::ContactDTO;
 use crate::models::{Contact, Employee, NewEmployee, Salary};
 use crate::salaries_dao::SalaryDTO;
 use crate::schema::contacts::dsl::contacts;
-use crate::schema::employees::dsl::*;
 use crate::schema::employees::dsl::id as employee_id;
+use crate::schema::employees::dsl::*;
 use crate::schema::salaries::dsl::*;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -62,72 +62,80 @@ impl HaveId for EmployeeDTO {
 }
 
 impl Crud for EmployeeDTO {
-    fn update(&mut self, other: &Self) {
-        self.id = other.id;
+    fn update(&mut self, persisted: &Self) {
+        self.id = persisted.id;
     }
 
     fn get_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<Self> {
         employees
             .filter(employee_id.eq(id_to_find))
             .first(conn)
-            .map(|e: Employee| {
-                let sv: Vec<Salary> = Salary::belonging_to(&e).load(conn).unwrap();
-                let cv: Vec<Contact> = Contact::belonging_to(&e).load(conn).unwrap();
-                let mut e_dto = EmployeeDTO::from(e);
-                for s in sv {
-                    e_dto.salaries.push(SalaryDTO::from(s));
-                }
-                for c in cv {
-                    e_dto.contacts.push(ContactDTO::from(c));
-                }
-                e_dto
-            })
+            .map(|e: Employee| into_dto_with_associations(e, conn))
     }
 
     fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<Self> {
-        fn insert(e: &EmployeeDTO, conn: &SqliteConnection) -> QueryResult<EmployeeDTO> {
+        let delete_associations = |e_id: i32| {
+            use crate::schema::contacts::columns::employee_id as contacts_employee_id;
+            use crate::schema::salaries::columns::employee_id as salaries_employee_id;
+
+            // TODO: Consider to delete only required association by use eq_any() in filter
+            diesel::delete(salaries)
+                .filter(salaries_employee_id.eq(e_id))
+                .execute(conn)
+                .unwrap();
+            diesel::delete(contacts)
+                .filter(contacts_employee_id.eq(e_id))
+                .execute(conn)
+                .unwrap();
+        };
+        let save_associations = |e_id: i32, e_dto: &mut EmployeeDTO| {
+            for s in &mut e_dto.salaries {
+                s.employee_id = Some(e_id);
+                s.save_simple(conn).map(|saved| s.update(&saved)).unwrap();
+            }
+            for c in &mut e_dto.contacts {
+                c.employee_id = Some(e_id);
+                c.save_simple(conn).map(|saved| c.update(&saved)).unwrap();
+            }
+        };
+        let employee_to_dto_with_associations = |e: Employee| -> EmployeeDTO {
+            let e_id = e.id;
+            let mut e_dto = EmployeeDTO::from(e);
+            save_associations(e_id, &mut e_dto);
+            e_dto
+        };
+        let insert = |e_dto: &EmployeeDTO| -> QueryResult<EmployeeDTO> {
             insert_into(employees)
-                .values(NewEmployee::from(&*e))
+                .values(NewEmployee::from(&*e_dto))
                 .execute(conn)
                 .and_then(|_| {
                     employees
                         .order(employee_id.desc())
                         .first(conn)
-                        .map(|e: Employee| EmployeeDTO::from(e))
+                        .map(|e: Employee| employee_to_dto_with_associations(e))
                 })
-        }
-
-        let result = if self.id.is_some() {
-            let self_id = self.id.unwrap();
-            let updated = diesel::update(employees.filter(employee_id.eq(self_id)))
-                .set(Employee::from(&*self))
-                .execute(conn)?;
-            if updated == 0 {
-                insert(self, conn)
-            } else {
-                employees
-                    .filter(employee_id.eq(self_id))
-                    .first(conn)
-                    .map(|e: Employee| EmployeeDTO::from(e))
-            }
-        } else {
-            insert(self, conn)
         };
-        match result {
-            Ok(mut e_dto) => {
-                for s in &self.salaries {
-                    let mut new_s = s.clone();
-                    new_s.employee_id = e_dto.id;
-                    e_dto.salaries.push(new_s.save_simple(conn)?);
-                }
-                for c in &self.contacts {
-                    let mut new_c = c.clone();
-                    new_c.employee_id = e_dto.id;
-                    e_dto.contacts.push(new_c.save_simple(conn)?);
-                }
-                Ok(e_dto)
-            }
-            Err(_) => result,
+
+        if self.id.is_some() {
+            let self_id = self.id.unwrap();
+            diesel::update(employees.filter(employee_id.eq(self_id)))
+                .set(Employee::from(&*self))
+                .execute(conn)
+                .and_then(|updated| {
+                    if updated == 0 {
+                        insert(self)
+                    } else {
+                        employees
+                            .filter(employee_id.eq(self_id))
+                            .first(conn)
+                            .map(|e: Employee| {
+                                delete_associations(e.id);
+                                employee_to_dto_with_associations(e)
+                            })
+                    }
+                })
+        } else {
+            insert(self)
         }
     }
 
@@ -145,6 +153,42 @@ impl Crud for EmployeeDTO {
             .filter(employee_id.eq(id_to_find))
             .execute(conn)
     }
+}
+
+impl Searchable for EmployeeDTO {
+    fn get_all(conn: &SqliteConnection) -> Vec<Self> {
+        employees
+            .load::<Employee>(conn)
+            .expect("Load employees failed")
+            .into_iter()
+            .map(|e| into_dto_with_associations(e, conn))
+            .collect()
+    }
+
+    fn search(s: &str, conn: &SqliteConnection) -> Vec<Self> {
+        use crate::schema::employees::columns::search_string;
+
+        employees
+            .filter(search_string.like(s))
+            .load::<Employee>(conn)
+            .expect("Search employees failed ")
+            .into_iter()
+            .map(|e| Self::from(e))
+            .collect()
+    }
+}
+
+fn into_dto_with_associations(e: Employee, conn: &SqliteConnection) -> EmployeeDTO {
+    let sv: Vec<Salary> = Salary::belonging_to(&e).load(conn).unwrap();
+    let cv: Vec<Contact> = Contact::belonging_to(&e).load(conn).unwrap();
+    let mut e_dto = EmployeeDTO::from(e);
+    for s in sv {
+        e_dto.salaries.push(SalaryDTO::from(s));
+    }
+    for c in cv {
+        e_dto.contacts.push(ContactDTO::from(c));
+    }
+    e_dto
 }
 
 #[cfg(test)]
@@ -204,6 +248,12 @@ mod tests {
                 },
             ],
         };
-        employee.test(conn);
+        // TODO: Add assertions about associations
+        let assertions = Assertions::new()
+            .with_saved(|_e, _conn| {})
+            .with_get(|_e, _conn| {})
+            .with_persisted(|_e, _conn| {})
+            .with_deleted(|_e, _conn| {});
+        employee.test_with_assertion(assertions, conn);
     }
 }

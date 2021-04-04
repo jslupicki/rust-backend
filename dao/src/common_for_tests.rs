@@ -6,7 +6,7 @@ use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
-use crate::base_dao::Crud;
+use crate::base_dao::{Crud, HaveId};
 use crate::schema::employees::dsl::id as employee_id;
 use crate::schema::employees::dsl::*;
 use crate::schema::users::dsl::id as user_id;
@@ -50,11 +50,49 @@ pub fn assert_employee_count(expected: i64, conn: &SqliteConnection) {
     assert_eq!(employee_count, expected);
 }
 
+pub struct Assertions<T> {
+    pub saved: Option<fn(&T, &SqliteConnection)>,
+    pub get: Option<fn(&T, &SqliteConnection)>,
+    pub persisted: Option<fn(&T, &SqliteConnection)>,
+    pub deleted: Option<fn(&T, &SqliteConnection)>,
+}
+
+impl<T> Assertions<T> {
+    pub fn new() -> Assertions<T> {
+        Assertions {
+            saved: None,
+            get: None,
+            persisted: None,
+            deleted: None,
+        }
+    }
+    pub fn with_saved(mut self, f: fn(&T, &SqliteConnection)) -> Self {
+        self.saved = Some(f);
+        self
+    }
+    pub fn with_get(mut self, f: fn(&T, &SqliteConnection)) -> Self {
+        self.get = Some(f);
+        self
+    }
+    pub fn with_persisted(mut self, f: fn(&T, &SqliteConnection)) -> Self {
+        self.persisted = Some(f);
+        self
+    }
+    pub fn with_deleted(mut self, f: fn(&T, &SqliteConnection)) -> Self {
+        self.deleted = Some(f);
+        self
+    }
+}
+
 pub trait CrudTests
 where
-    Self: Crud + Debug,
+    Self: Crud + HaveId + Debug,
 {
     fn test(&mut self, conn: &SqliteConnection) {
+        Self::test_with_assertion(self, Assertions::new(), conn);
+    }
+
+    fn test_with_assertion(&mut self, assertions: Assertions<Self>, conn: &SqliteConnection) {
         info!("About to test {:#?}", &self);
         // Save
         let saved = self.save_in_transaction(conn);
@@ -69,6 +107,9 @@ where
         assert!(saved_id2.is_some());
         let saved_id2 = saved_id2.unwrap();
         assert_eq!(saved_id, saved_id2);
+        if let Some(f) = assertions.get {
+            f(self, conn);
+        }
         // Persist
         assert!(self.get_id().is_none());
         let persisted = self.persist_in_transaction(conn);

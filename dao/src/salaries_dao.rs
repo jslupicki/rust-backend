@@ -63,8 +63,8 @@ impl HaveId for SalaryDTO {
 }
 
 impl Crud for SalaryDTO {
-    fn update(&mut self, other: &Self) {
-        self.id = other.id;
+    fn update(&mut self, persisted: &Self) {
+        self.id = persisted.id;
     }
 
     fn get_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<SalaryDTO> {
