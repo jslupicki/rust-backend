@@ -8,7 +8,7 @@ edition = "2018"
 dao = { path = "dao" }
 rest = { path = "rest" }
 log = "0.4.11"
-log4rs = "0.13.0"
+log4rs = "1.0.0"
 actix-web = "3.1.0"
 actix-rt = "1.1.1"
 
@@ -16,7 +16,7 @@ actix-rt = "1.1.1"
 diesel = { version = "1.4.5", features = ["sqlite", "chrono"] }
 diesel_migrations = "1.4.0"
 lazy_static = "1.4.0"
-bytes = { version = "0.5.6", features = ["serde"] }
+bytes = { version = "1.0.1", features = ["serde"] }
 actix-http = "2.0.0"
 actix-service = "1.0.6"
 scopeguard = "1.1.0"
