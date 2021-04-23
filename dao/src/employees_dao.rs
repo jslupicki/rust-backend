@@ -79,6 +79,18 @@ impl Crud for EmployeeDTO {
             use crate::schema::salaries::columns::employee_id as salaries_employee_id;
 
             // TODO: Consider to delete only required association by use eq_any() in filter
+            // save_simple() do update/insert so it will update not deleted associations
+            let _salaries_ids: Vec<i32> = (&self.salaries)
+                .into_iter()
+                .filter(|s| s.id.is_some())
+                .map(|s| s.id.unwrap())
+                .collect();
+            let _contacts_ids: Vec<i32> = (&self.contacts)
+                .into_iter()
+                .filter(|c| c.id.is_some())
+                .map(|c| c.id.unwrap())
+                .collect();
+
             diesel::delete(salaries)
                 .filter(salaries_employee_id.eq(e_id))
                 .execute(conn)

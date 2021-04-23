@@ -24,6 +24,7 @@ pub enum LoggedGuard {
     Logged,
     LoggedWithException(&'static [Method]),
     LoggedAsAdmin(&'static [Method]),
+    #[allow(dead_code)]
     LoggedAsAdminWithException(&'static [Method], &'static [Method]),
 }
 

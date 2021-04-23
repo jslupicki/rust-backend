@@ -45,6 +45,7 @@ pub fn assert_user_count(expected: i64, conn: &SqliteConnection) {
     assert_eq!(user_count, expected);
 }
 
+#[allow(dead_code)]
 pub fn assert_employee_count(expected: i64, conn: &SqliteConnection) {
     let employee_count = employee_count(conn);
     assert_eq!(employee_count, expected);
@@ -100,6 +101,9 @@ where
         let saved_id = saved.unwrap().get_id();
         assert!(saved_id.is_some());
         let saved_id = saved_id.unwrap();
+        if let Some(f) = assertions.saved {
+            f(self, conn);
+        }
         // Get
         let saved = Self::get_with_conn(saved_id, conn);
         assert!(saved.is_some());
@@ -120,6 +124,9 @@ where
         let persisted_id = persisted_id.unwrap();
         let self_id = self.get_id().unwrap();
         assert_eq!(self_id, persisted_id);
+        if let Some(f) = assertions.persisted {
+            f(self, conn);
+        }
         // Delete by id
         let deleted = self.delete_with_conn(conn);
         assert_eq!(deleted, Some(1));
@@ -134,6 +141,9 @@ where
         assert_eq!(deleted, Some(1));
         let just_deleted = Self::get_with_conn(self_id, conn);
         assert!(just_deleted.is_none());
+        if let Some(f) = assertions.deleted {
+            f(self, conn);
+        }
     }
 
     fn test_without_conn(&mut self) {
