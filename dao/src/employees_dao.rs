@@ -61,9 +61,23 @@ impl HaveId for EmployeeDTO {
     }
 }
 
+fn delete_associations(e_id: i32, conn: &SqliteConnection) -> QueryResult<usize> {
+    use crate::schema::contacts::columns::employee_id as contacts_employee_id;
+    use crate::schema::salaries::columns::employee_id as salaries_employee_id;
+
+    diesel::delete(salaries)
+        .filter(salaries_employee_id.eq(e_id))
+        .execute(conn)?;
+    diesel::delete(contacts)
+        .filter(contacts_employee_id.eq(e_id))
+        .execute(conn)
+}
+
 impl Crud for EmployeeDTO {
     fn update(&mut self, persisted: &Self) {
         self.id = persisted.id;
+        self.salaries = persisted.salaries.clone();
+        self.contacts = persisted.contacts.clone();
     }
 
     fn get_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<Self> {
@@ -74,46 +88,22 @@ impl Crud for EmployeeDTO {
     }
 
     fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<Self> {
-        let delete_associations = |e_id: i32| {
-            use crate::schema::contacts::columns::employee_id as contacts_employee_id;
-            use crate::schema::salaries::columns::employee_id as salaries_employee_id;
-
-            // TODO: Consider to delete only required association by use eq_any() in filter
-            // save_simple() do update/insert so it will update not deleted associations
-            let _salaries_ids: Vec<i32> = (&self.salaries)
-                .into_iter()
-                .filter(|s| s.id.is_some())
-                .map(|s| s.id.unwrap())
-                .collect();
-            let _contacts_ids: Vec<i32> = (&self.contacts)
-                .into_iter()
-                .filter(|c| c.id.is_some())
-                .map(|c| c.id.unwrap())
-                .collect();
-
-            diesel::delete(salaries)
-                .filter(salaries_employee_id.eq(e_id))
-                .execute(conn)
-                .unwrap();
-            diesel::delete(contacts)
-                .filter(contacts_employee_id.eq(e_id))
-                .execute(conn)
-                .unwrap();
-        };
-        let save_associations = |e_id: i32, e_dto: &mut EmployeeDTO| {
-            for s in &mut e_dto.salaries {
-                s.employee_id = Some(e_id);
-                s.save_simple(conn).map(|saved| s.update(&saved)).unwrap();
-            }
-            for c in &mut e_dto.contacts {
-                c.employee_id = Some(e_id);
-                c.save_simple(conn).map(|saved| c.update(&saved)).unwrap();
-            }
-        };
-        let employee_to_dto_with_associations = |e: Employee| -> EmployeeDTO {
+        let employee_to_dto_with_associations = |e: Employee,
+                                                 salaries_to_save: &Vec<SalaryDTO>,
+                                                 contacts_to_save: &Vec<ContactDTO>|
+         -> EmployeeDTO {
             let e_id = e.id;
             let mut e_dto = EmployeeDTO::from(e);
-            save_associations(e_id, &mut e_dto);
+            for s in salaries_to_save {
+                let mut new_s = s.clone();
+                new_s.employee_id = Some(e_id);
+                e_dto.salaries.push(new_s.save_simple(conn).unwrap());
+            }
+            for c in contacts_to_save {
+                let mut new_c = c.clone();
+                new_c.employee_id = Some(e_id);
+                e_dto.contacts.push(new_c.save_simple(conn).unwrap());
+            }
             e_dto
         };
         let insert = |e_dto: &EmployeeDTO| -> QueryResult<EmployeeDTO> {
@@ -124,7 +114,9 @@ impl Crud for EmployeeDTO {
                     employees
                         .order(employee_id.desc())
                         .first(conn)
-                        .map(|e: Employee| employee_to_dto_with_associations(e))
+                        .map(|e: Employee| {
+                            employee_to_dto_with_associations(e, &self.salaries, &self.contacts)
+                        })
                 })
         };
 
@@ -141,8 +133,8 @@ impl Crud for EmployeeDTO {
                             .filter(employee_id.eq(self_id))
                             .first(conn)
                             .map(|e: Employee| {
-                                delete_associations(e.id);
-                                employee_to_dto_with_associations(e)
+                                let _ = delete_associations(e.id, conn);
+                                employee_to_dto_with_associations(e, &self.salaries, &self.contacts)
                             })
                     }
                 })
@@ -152,15 +144,7 @@ impl Crud for EmployeeDTO {
     }
 
     fn delete_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<usize> {
-        use crate::schema::contacts::columns::employee_id as contacts_employee_id;
-        use crate::schema::salaries::columns::employee_id as salaries_employee_id;
-
-        diesel::delete(salaries)
-            .filter(salaries_employee_id.eq(id_to_find))
-            .execute(conn)?;
-        diesel::delete(contacts)
-            .filter(contacts_employee_id.eq(id_to_find))
-            .execute(conn)?;
+        let _ = delete_associations(id_to_find, conn);
         diesel::delete(employees)
             .filter(employee_id.eq(id_to_find))
             .execute(conn)
@@ -260,12 +244,24 @@ mod tests {
                 },
             ],
         };
-        // TODO: Add assertions about associations
+        let common_assertions = |e: &EmployeeDTO, _conn: &SqliteConnection| {
+            assert_eq!(e.salaries.len(), 2);
+            assert_eq!(e.contacts.len(), 2);
+            for s in &e.salaries {
+                assert!(s.get_id().is_some());
+                assert_eq!(s.employee_id, e.id);
+            }
+            for c in &e.contacts {
+                assert!(c.get_id().is_some());
+                assert_eq!(c.employee_id, e.id);
+            }
+        };
         let assertions = Assertions::new()
-            .with_saved(|_e, _conn| {})
-            .with_get(|_e, _conn| {})
-            .with_persisted(|_e, _conn| {})
-            .with_deleted(|_e, _conn| {});
+            .with_saved(common_assertions)
+            .with_get(common_assertions)
+            .with_persisted(common_assertions);
+        //.with_deleted(|_e, _conn| {});
+
         employee.test_with_assertion(assertions, conn);
     }
 }
