@@ -3,12 +3,13 @@ use actix_http::http::Method;
 use actix_web::web::Json;
 use actix_web::{web, Error, HttpResponse};
 
-use dao::{Crud, EmployeeDTO};
+use dao::{Crud, EmployeeDTO, Searchable};
 
 use crate::session::LoggedGuard::{Logged, LoggedAsAdmin};
 
 async fn get_employees() -> Result<HttpResponse, Error> {
-    let body = "NOT YET IMPLEMENTED".to_string();
+    let employees: Vec<EmployeeDTO> = EmployeeDTO::get_all();
+    let body = serde_json::to_string(&employees)?;
     Ok(HttpResponse::Ok()
         .content_type("application/json")
         .body(body))
@@ -48,11 +49,23 @@ async fn update_employee(employee_json: Json<EmployeeDTO>) -> Result<HttpRespons
 
 async fn delete_employee(path: web::Path<String>) -> Result<HttpResponse, Error> {
     let id: i32 = path.parse().unwrap();
-    info!("Not yet implemented delete user: {}", id);
-    let body = "NOT YET IMPLEMENTED".to_string();
-    Ok(HttpResponse::Ok()
-        .content_type("application/json")
-        .body(body))
+    let employee = EmployeeDTO::get(id);
+    match employee {
+        Some(e) => match e.delete() {
+            Some(n) if n == 1 => Ok(HttpResponse::Ok()
+                .content_type("application/json")
+                .body(format!("Removed employee with id = {}", id))),
+            Some(n) => Err(ErrorInternalServerError(format!(
+                "Removed {} employees with id = {}",
+                n, id
+            ))),
+            None => Err(ErrorInternalServerError("???")),
+        },
+        None => Err(ErrorNotFound(format!(
+            "Not found employee with id = {}",
+            id
+        ))),
+    }
 }
 
 async fn get_employee_template() -> Result<HttpResponse, Error> {

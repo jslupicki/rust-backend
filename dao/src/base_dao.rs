@@ -96,14 +96,33 @@ pub trait Searchable
 where
     Self: Sized,
 {
-    fn get_all(conn: &SqliteConnection) -> Vec<Self>;
-
-    fn search(s: &str, conn: &SqliteConnection) -> Vec<Self>;
-
-    fn filter<P>(predicate: P, conn: &SqliteConnection) -> Vec<Self>
+    fn get_all() -> Vec<Self> {
+        let conn: &SqliteConnection = &get_connection();
+        Self::get_all_with_connection(conn)
+    }
+    fn search(s: &str) -> Vec<Self> {
+        let conn: &SqliteConnection = &get_connection();
+        Self::search_with_connection(s, conn)
+    }
+    fn filter<P>(predicate: P) -> Vec<Self>
     where
         P: FnMut(&Self) -> bool,
     {
-        Self::get_all(conn).into_iter().filter(predicate).collect()
+        let conn: &SqliteConnection = &get_connection();
+        Self::filter_with_connection(predicate, conn)
+    }
+
+    fn get_all_with_connection(conn: &SqliteConnection) -> Vec<Self>;
+
+    fn search_with_connection(s: &str, conn: &SqliteConnection) -> Vec<Self>;
+
+    fn filter_with_connection<P>(predicate: P, conn: &SqliteConnection) -> Vec<Self>
+    where
+        P: FnMut(&Self) -> bool,
+    {
+        Self::get_all_with_connection(conn)
+            .into_iter()
+            .filter(predicate)
+            .collect()
     }
 }

@@ -152,7 +152,7 @@ impl Crud for EmployeeDTO {
 }
 
 impl Searchable for EmployeeDTO {
-    fn get_all(conn: &SqliteConnection) -> Vec<Self> {
+    fn get_all_with_connection(conn: &SqliteConnection) -> Vec<Self> {
         employees
             .load::<Employee>(conn)
             .expect("Load employees failed")
@@ -161,7 +161,7 @@ impl Searchable for EmployeeDTO {
             .collect()
     }
 
-    fn search(s: &str, conn: &SqliteConnection) -> Vec<Self> {
+    fn search_with_connection(s: &str, conn: &SqliteConnection) -> Vec<Self> {
         use crate::schema::employees::columns::search_string;
 
         employees
