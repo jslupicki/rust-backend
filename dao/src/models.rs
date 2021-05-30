@@ -2,7 +2,7 @@ use chrono::NaiveDate;
 
 use crate::schema::{contacts, employees, salaries, users};
 
-#[derive(Queryable, AsChangeset, Debug, Serialize)]
+#[derive(Queryable, AsChangeset, Debug, Serialize, Clone)]
 pub struct User {
     pub id: i32,
     pub username: String,
@@ -10,7 +10,7 @@ pub struct User {
     pub is_admin: bool,
 }
 
-#[derive(Insertable, Debug)]
+#[derive(Insertable, Debug, Clone)]
 #[table_name = "users"]
 pub struct NewUser {
     pub username: String,
@@ -18,7 +18,7 @@ pub struct NewUser {
     pub is_admin: bool,
 }
 
-#[derive(Queryable, AsChangeset, Debug, Serialize, Identifiable)]
+#[derive(Queryable, AsChangeset, Debug, Serialize, Identifiable, Clone)]
 pub struct Employee {
     pub id: i32,
     pub first_name: String,
@@ -26,7 +26,7 @@ pub struct Employee {
     pub search_string: String,
 }
 
-#[derive(Insertable, Debug)]
+#[derive(Insertable, Debug, Clone)]
 #[table_name = "employees"]
 pub struct NewEmployee {
     pub first_name: String,
@@ -34,7 +34,7 @@ pub struct NewEmployee {
     pub search_string: String,
 }
 
-#[derive(Queryable, AsChangeset, Debug, Serialize, Associations, Identifiable)]
+#[derive(Queryable, AsChangeset, Debug, Serialize, Associations, Identifiable, Clone)]
 #[belongs_to(Employee)]
 #[table_name = "salaries"]
 pub struct Salary {
@@ -46,7 +46,7 @@ pub struct Salary {
     pub search_string: String,
 }
 
-#[derive(Insertable, Debug)]
+#[derive(Insertable, Debug, Clone)]
 #[table_name = "salaries"]
 pub struct NewSalary {
     pub employee_id: i32,
@@ -56,7 +56,7 @@ pub struct NewSalary {
     pub search_string: String,
 }
 
-#[derive(Queryable, AsChangeset, Debug, Serialize, Associations, Identifiable)]
+#[derive(Queryable, AsChangeset, Debug, Serialize, Associations, Identifiable, Clone)]
 #[belongs_to(Employee)]
 #[table_name = "contacts"]
 pub struct Contact {
@@ -69,7 +69,7 @@ pub struct Contact {
     pub search_string: String,
 }
 
-#[derive(Insertable, Debug)]
+#[derive(Insertable, Debug, Clone)]
 #[table_name = "contacts"]
 pub struct NewContact {
     pub employee_id: i32,
