@@ -67,18 +67,22 @@ impl<T> Assertions<T> {
             deleted: None,
         }
     }
+    #[allow(dead_code)]
     pub fn with_saved(mut self, f: fn(&T, &SqliteConnection)) -> Self {
         self.saved = Some(f);
         self
     }
+    #[allow(dead_code)]
     pub fn with_get(mut self, f: fn(&T, &SqliteConnection)) -> Self {
         self.get = Some(f);
         self
     }
+    #[allow(dead_code)]
     pub fn with_persisted(mut self, f: fn(&T, &SqliteConnection)) -> Self {
         self.persisted = Some(f);
         self
     }
+    #[allow(dead_code)]
     pub fn with_deleted(mut self, f: fn(&T, &SqliteConnection)) -> Self {
         self.deleted = Some(f);
         self
@@ -98,21 +102,23 @@ where
         // Save
         let saved = self.save_in_transaction(conn);
         assert!(saved.is_some());
-        let saved_id = saved.unwrap().get_id();
+        let saved = saved.unwrap();
+        let saved_id = saved.get_id();
         assert!(saved_id.is_some());
         let saved_id = saved_id.unwrap();
         if let Some(f) = assertions.saved {
-            f(self, conn);
+            f(&saved, conn);
         }
         // Get
         let saved = Self::get_with_conn(saved_id, conn);
         assert!(saved.is_some());
-        let saved_id2 = saved.unwrap().get_id();
+        let saved = saved.unwrap();
+        let saved_id2 = saved.get_id();
         assert!(saved_id2.is_some());
         let saved_id2 = saved_id2.unwrap();
         assert_eq!(saved_id, saved_id2);
         if let Some(f) = assertions.get {
-            f(self, conn);
+            f(&saved, conn);
         }
         // Persist
         assert!(self.get_id().is_none());
