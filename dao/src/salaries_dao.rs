@@ -3,10 +3,12 @@ use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
+use crate::base_dao::SearchableByParent;
 use crate::base_dao::{Crud, HaveId};
 use crate::models::{NewSalary, Salary};
 use crate::schema::salaries::dsl::id as salary_id;
 use crate::schema::salaries::dsl::*;
+use crate::Searchable;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SalaryDTO {
@@ -27,6 +29,19 @@ impl From<Salary> for SalaryDTO {
             to_date: s.to_date,
             amount: s.amount,
             search_string: s.search_string,
+        }
+    }
+}
+
+impl From<&Salary> for SalaryDTO {
+    fn from(s: &Salary) -> Self {
+        SalaryDTO {
+            id: Some(s.id),
+            employee_id: Some(s.employee_id),
+            from_date: s.from_date,
+            to_date: s.to_date,
+            amount: s.amount,
+            search_string: s.search_string.clone(),
         }
     }
 }
@@ -106,6 +121,22 @@ impl Crud for SalaryDTO {
 
     fn delete_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<usize> {
         diesel::delete(salaries.filter(salary_id.eq(id_to_find))).execute(conn)
+    }
+}
+
+impl Searchable for SalaryDTO {
+    fn get_all_with_connection(conn: &SqliteConnection) -> Vec<Self> {
+        todo!()
+    }
+
+    fn search_with_connection(s: &str, conn: &SqliteConnection) -> Vec<Self> {
+        todo!()
+    }
+}
+
+impl SearchableByParent for SalaryDTO {
+    fn search_by_parent_id_with_connection(parent_id: i32, conn: &SqliteConnection) -> Vec<Self> {
+        todo!()
     }
 }
 

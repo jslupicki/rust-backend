@@ -126,3 +126,15 @@ where
             .collect()
     }
 }
+
+pub trait SearchableByParent
+where
+    Self: Sized,
+{
+    fn search_by_parent(parent_id: i32) -> Vec<Self> {
+        let conn: &SqliteConnection = &get_connection();
+        Self::search_by_parent_id_with_connection(parent_id, conn)
+    }
+
+    fn search_by_parent_id_with_connection(parent_id: i32, conn: &SqliteConnection) -> Vec<Self>;
+}

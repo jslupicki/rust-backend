@@ -3,10 +3,12 @@ use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
+use crate::base_dao::SearchableByParent;
 use crate::base_dao::{Crud, HaveId};
 use crate::models::{Contact, NewContact};
 use crate::schema::contacts::dsl::id as contact_id;
 use crate::schema::contacts::dsl::*;
+use crate::Searchable;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ContactDTO {
@@ -29,6 +31,20 @@ impl From<Contact> for ContactDTO {
             address: c.address,
             phone: c.phone,
             search_string: c.search_string,
+        }
+    }
+}
+
+impl From<&Contact> for ContactDTO {
+    fn from(c: &Contact) -> Self {
+        ContactDTO {
+            id: Some(c.id),
+            employee_id: Some(c.employee_id),
+            from_date: c.from_date,
+            to_date: c.to_date,
+            address: c.address.clone(),
+            phone: c.phone.clone(),
+            search_string: c.search_string.clone(),
         }
     }
 }
@@ -110,6 +126,22 @@ impl Crud for ContactDTO {
 
     fn delete_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<usize> {
         diesel::delete(contacts.filter(contact_id.eq(id_to_find))).execute(conn)
+    }
+}
+
+impl Searchable for ContactDTO {
+    fn get_all_with_connection(conn: &SqliteConnection) -> Vec<Self> {
+        todo!()
+    }
+
+    fn search_with_connection(s: &str, conn: &SqliteConnection) -> Vec<Self> {
+        todo!()
+    }
+}
+
+impl SearchableByParent for ContactDTO {
+    fn search_by_parent_id_with_connection(parent_id: i32, conn: &SqliteConnection) -> Vec<Self> {
+        todo!()
     }
 }
 

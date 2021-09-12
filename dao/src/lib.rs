@@ -19,7 +19,7 @@ extern crate sha3;
 
 use diesel::QueryResult;
 
-pub use base_dao::{Crud, Searchable};
+pub use base_dao::{Crud, Searchable, SearchableByParent};
 pub use connection::{get_connection, initialize_db};
 pub use employees_dao::EmployeeDTO;
 pub use models::*;

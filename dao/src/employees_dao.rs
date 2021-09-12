@@ -169,7 +169,7 @@ impl Searchable for EmployeeDTO {
             .load::<Employee>(conn)
             .expect("Search employees failed ")
             .into_iter()
-            .map(|e| Self::from(e))
+            .map(Self::from)
             .collect()
     }
 }
