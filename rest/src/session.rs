@@ -15,6 +15,8 @@ use actix_web::{web, Error, HttpMessage, HttpRequest, HttpResponse};
 use futures::future::{ok, Ready};
 use uuid::Uuid;
 
+use LoggedGuard::{Logged, LoggedAsAdmin, LoggedAsAdminWithException, LoggedWithException};
+
 lazy_static! {
     /// Map: session_id -> (username, user_id)
     static ref SESSIONS: Mutex<HashMap<String, (String, i32)>> = Mutex::new(HashMap::new());
@@ -27,8 +29,6 @@ pub enum LoggedGuard {
     #[allow(dead_code)]
     LoggedAsAdminWithException(&'static [Method], &'static [Method]),
 }
-
-use LoggedGuard::{Logged, LoggedAsAdmin, LoggedAsAdminWithException, LoggedWithException};
 
 impl<S> Transform<S> for LoggedGuard
 where
@@ -121,7 +121,7 @@ pub fn is_logged(req: &ServiceRequest, as_admin: &[Method], except: &[Method]) -
             session, user.username, user.is_admin, method, as_admin
         );
         let is_admin_method = contain_method(method, as_admin);
-        if as_admin.len() == 0 || !is_admin_method || (is_admin_method && user.is_admin) {
+        if as_admin.is_empty() || !is_admin_method || (is_admin_method && user.is_admin) {
             info!(
                 "Allow access to {} with session {} for user '{}'",
                 req.path(),
@@ -149,12 +149,7 @@ pub fn is_logged(req: &ServiceRequest, as_admin: &[Method], except: &[Method]) -
 }
 
 fn contain_method(method: &Method, methods: &[Method]) -> bool {
-    for m in methods.iter() {
-        if method == m {
-            return true;
-        }
-    }
-    false
+    methods.iter().find(|m| m == method).is_some()
 }
 
 #[derive(Serialize, Deserialize)]

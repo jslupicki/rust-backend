@@ -45,16 +45,13 @@ impl UserDTO {
             user.password = password.clone()
         };
         if let Some(is_admin) = &self.is_admin {
-            user.is_admin = is_admin.clone()
+            user.is_admin = *is_admin
         };
     }
 }
 
 async fn get_users() -> Result<HttpResponse, Error> {
-    let users: Vec<UserDTO> = dao::get_users()
-        .into_iter()
-        .map(|u| UserDTO::from(u))
-        .collect();
+    let users: Vec<UserDTO> = dao::get_users().into_iter().map(UserDTO::from).collect();
     let body = serde_json::to_string(&users)?;
     Ok(HttpResponse::Ok()
         .content_type("application/json")
@@ -100,7 +97,7 @@ async fn delete_user(path: web::Path<String>) -> Result<HttpResponse, Error> {
     let id: i32 = path.parse().unwrap();
     if let Some(user) = dao::get_user(id) {
         match dao::delete_user(&user) {
-            Ok(deleted) if deleted == 0 => Err(ErrorImATeapot(format!("Deleted 0 users!?"))),
+            Ok(deleted) if deleted == 0 => Err(ErrorImATeapot("Deleted 0 users!?".to_string())),
             Ok(deleted) if deleted > 1 => {
                 Err(ErrorImATeapot(format!("Deleted {}>1 users!?", deleted)))
             }
