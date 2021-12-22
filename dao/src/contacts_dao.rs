@@ -97,7 +97,7 @@ impl Crud for ContactDTO {
     fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<ContactDTO> {
         fn insert(c: &ContactDTO, conn: &SqliteConnection) -> QueryResult<ContactDTO> {
             insert_into(contacts)
-                .values(NewContact::from(&*c))
+                .values(NewContact::from(c))
                 .execute(conn)
                 .and_then(|_| {
                     contacts
@@ -109,7 +109,7 @@ impl Crud for ContactDTO {
         if self.id.is_some() {
             let self_id = self.id.unwrap();
             let updated = diesel::update(contacts.filter(contact_id.eq(self_id)))
-                .set(Contact::from(&*self))
+                .set(Contact::from(self))
                 .execute(conn)?;
             if updated == 0 {
                 insert(self, conn)

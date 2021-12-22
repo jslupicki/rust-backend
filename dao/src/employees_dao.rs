@@ -108,7 +108,7 @@ impl Crud for EmployeeDTO {
         };
         let insert = |e_dto: &EmployeeDTO| -> QueryResult<EmployeeDTO> {
             insert_into(employees)
-                .values(NewEmployee::from(&*e_dto))
+                .values(NewEmployee::from(e_dto))
                 .execute(conn)
                 .and_then(|_| {
                     employees
@@ -123,7 +123,7 @@ impl Crud for EmployeeDTO {
         if self.id.is_some() {
             let self_id = self.id.unwrap();
             diesel::update(employees.filter(employee_id.eq(self_id)))
-                .set(Employee::from(&*self))
+                .set(Employee::from(self))
                 .execute(conn)
                 .and_then(|updated| {
                     if updated == 0 {

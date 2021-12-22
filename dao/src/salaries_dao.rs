@@ -92,7 +92,7 @@ impl Crud for SalaryDTO {
     fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<SalaryDTO> {
         fn insert(s: &SalaryDTO, conn: &SqliteConnection) -> QueryResult<SalaryDTO> {
             insert_into(salaries)
-                .values(NewSalary::from(&*s))
+                .values(NewSalary::from(s))
                 .execute(conn)
                 .and_then(|_| {
                     salaries
@@ -104,7 +104,7 @@ impl Crud for SalaryDTO {
         if self.id.is_some() {
             let self_id = self.id.unwrap();
             let updated = diesel::update(salaries.filter(salary_id.eq(self_id)))
-                .set(Salary::from(&*self))
+                .set(Salary::from(self))
                 .execute(conn)?;
             if updated == 0 {
                 insert(self, conn)
