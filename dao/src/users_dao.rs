@@ -57,7 +57,6 @@ pub fn validate_user(
 
 #[cfg(test)]
 mod tests {
-    use diesel;
     use diesel::result::DatabaseErrorKind::UniqueViolation;
     use diesel::result::Error::DatabaseError;
     use sha3::{Digest, Sha3_256};
@@ -172,8 +171,7 @@ mod tests {
             Err(DatabaseError(UniqueViolation, msg)) => {
                 assert_eq!(msg.message(), "UNIQUE constraint failed: users.username")
             }
-            _ => assert!(
-                false,
+            _ => panic!(
                 "Should report: UNIQUE constraint failed: users.username and instead I got {:?}",
                 rows_inserted
             ),
@@ -186,7 +184,7 @@ mod tests {
 
         let user_in_db = get_user(2, conn).unwrap();
         assert_eq!("admin", user_in_db.username);
-        assert_eq!(true, user_in_db.is_admin);
+        assert!(user_in_db.is_admin);
     }
 
     #[test]
@@ -203,7 +201,7 @@ mod tests {
         assert_eq!(2, updated_user.id);
         assert_eq!("admin".to_string(), updated_user.username);
         assert_eq!("new_password".to_string(), updated_user.password);
-        assert_eq!(true, updated_user.is_admin);
+        assert!(updated_user.is_admin);
     }
 
     #[test]
