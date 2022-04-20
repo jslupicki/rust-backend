@@ -2,7 +2,7 @@
 name = "rest"
 version = "0.1.0"
 authors = ["jslupicki <jan@slupicki.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 dao = { path = "../dao" }
