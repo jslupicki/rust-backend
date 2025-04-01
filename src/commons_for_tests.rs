@@ -31,8 +31,10 @@ pub fn initialize_log() {
 
 pub fn setup_db() {
     info!("Initialize DB (if not exist), run migrations");
-    env::set_var("DATABASE_URL", ":memory:");
-    env::set_var("POOL_SIZE", "1");
+    unsafe {
+        env::set_var("DATABASE_URL", ":memory:");
+        env::set_var("POOL_SIZE", "1");
+    }
     initialize_db().unwrap();
 }
 

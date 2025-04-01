@@ -1,4 +1,4 @@
-FROM rust:1.50
+FROM rust:1.85.0
 
 WORKDIR /usr/src/rust-backend
 COPY . .
