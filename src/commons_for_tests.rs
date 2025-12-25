@@ -1,10 +1,9 @@
 use std::env;
 use std::sync::Mutex;
 
-use diesel::sqlite::SqliteConnection;
 use diesel_migrations;
-
-use dao::{get_connection, initialize_db};
+use diesel_migrations::MigrationHarness;
+use dao::{get_connection, initialize_db, MIGRATIONS};
 
 lazy_static! {
     pub static ref MUTEX: Mutex<i32> = Mutex::new(0i32);
@@ -35,18 +34,19 @@ pub fn setup_db() {
         env::set_var("DATABASE_URL", ":memory:");
         env::set_var("POOL_SIZE", "1");
     }
-    initialize_db().unwrap();
+    initialize_db();
 }
 
 pub fn tear_down_db() {
-    let conn: &SqliteConnection = &get_connection();
-    loop {
-        match diesel_migrations::revert_latest_migration(conn) {
-            Ok(migration) => info!("Reverted {}", migration),
-            Err(e) => {
-                info!("Reverted all migrations: {}", e);
-                break;
+    let conn = &mut get_connection();
+    match conn.revert_all_migrations(MIGRATIONS) {
+        Ok(migrations) => {
+            for migration in migrations {
+                info!("Reverted {}", migration);
             }
-        };
+        }
+        Err(e) => {
+            info!("Error reverting migrations: {}", e);
+        }
     }
 }

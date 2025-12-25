@@ -1,4 +1,4 @@
-use actix_http::http::Method;
+use actix_web::http::Method;
 
 #[derive(Debug)]
 pub struct UrlCall {

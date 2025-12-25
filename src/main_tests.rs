@@ -1,9 +1,9 @@
-use actix_http::cookie::Cookie;
-use actix_http::http::StatusCode;
 use actix_http::Request;
 use actix_service::Service;
 use actix_web::dev::ServiceResponse;
 use actix_web::{test, App};
+use actix_web::cookie::Cookie;
+use actix_web::http::StatusCode;
 use bytes::Bytes;
 
 use rest::LoginDTO;
@@ -16,7 +16,9 @@ async fn call_to_index_should_return_hello_world() {
     setup_test!("call_to_index_should_return_hello_world");
 
     let mut app = test::init_service(App::new().configure(|cfg| rest::config_all(cfg))).await;
-    let req = test::TestRequest::with_header("content-type", "text/plain").to_request();
+    let req = test::TestRequest::default()
+        .insert_header(("content-type", "text/plain"))
+        .to_request();
     let resp = test::call_service(&mut app, req).await;
 
     assert!(resp.status().is_success());
@@ -148,7 +150,7 @@ async fn check_access_control() {
 
 pub async fn login<S, B, E>(username: &str, password: &str, app: &mut S) -> Option<Cookie<'static>>
 where
-    S: Service<Request = Request, Response = ServiceResponse<B>, Error = E>,
+    S: Service<Request, Response = ServiceResponse<B>, Error = E>,
     E: std::fmt::Debug,
 {
     let credentials = LoginDTO {
@@ -168,7 +170,7 @@ where
 
 pub async fn login_as_admin<S, B, E>(app: &mut S) -> Option<Cookie<'static>>
 where
-    S: Service<Request = Request, Response = ServiceResponse<B>, Error = E>,
+    S: Service<Request, Response = ServiceResponse<B>, Error = E>,
     E: std::fmt::Debug,
 {
     login(
@@ -181,7 +183,7 @@ where
 
 pub async fn login_as_user<S, B, E>(app: &mut S) -> Option<Cookie<'static>>
 where
-    S: Service<Request = Request, Response = ServiceResponse<B>, Error = E>,
+    S: Service<Request, Response = ServiceResponse<B>, Error = E>,
     E: std::fmt::Debug,
 {
     login(

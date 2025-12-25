@@ -82,15 +82,15 @@ impl Crud for SalaryDTO {
         self.id = persisted.id;
     }
 
-    fn get_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<SalaryDTO> {
+    fn get_simple(id_to_find: i32, conn: &mut SqliteConnection) -> QueryResult<SalaryDTO> {
         salaries
             .filter(salary_id.eq(id_to_find))
             .first(conn)
             .map(|s: Salary| SalaryDTO::from(s))
     }
 
-    fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<SalaryDTO> {
-        fn insert(s: &SalaryDTO, conn: &SqliteConnection) -> QueryResult<SalaryDTO> {
+    fn save_simple(&self, conn: &mut SqliteConnection) -> QueryResult<SalaryDTO> {
+        fn insert(s: &SalaryDTO, conn: &mut SqliteConnection) -> QueryResult<SalaryDTO> {
             insert_into(salaries)
                 .values(NewSalary::from(s))
                 .execute(conn)
@@ -119,43 +119,46 @@ impl Crud for SalaryDTO {
         }
     }
 
-    fn delete_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<usize> {
+    fn delete_simple(id_to_find: i32, conn: &mut SqliteConnection) -> QueryResult<usize> {
         diesel::delete(salaries.filter(salary_id.eq(id_to_find))).execute(conn)
     }
 }
 
 impl Searchable for SalaryDTO {
-    fn get_all_with_connection(conn: &SqliteConnection) -> Vec<Self> {
+    fn get_all_with_connection(conn: &mut SqliteConnection) -> Vec<Self> {
         todo!()
     }
 
-    fn search_with_connection(s: &str, conn: &SqliteConnection) -> Vec<Self> {
+    fn search_with_connection(s: &str, conn: &mut SqliteConnection) -> Vec<Self> {
         todo!()
     }
 }
 
 impl SearchableByParent for SalaryDTO {
-    fn search_by_parent_id_with_connection(parent_id: i32, conn: &SqliteConnection) -> Vec<Self> {
+    fn search_by_parent_id_with_connection(
+        parent_id: i32,
+        conn: &mut SqliteConnection,
+    ) -> Vec<Self> {
         todo!()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::io::stdout;
-
     use crate::common_for_tests::*;
+    use diesel_migrations::{EmbeddedMigrations, MigrationHarness};
 
     use super::*;
 
-    embed_migrations!("test_data/salaries");
+    const SALARIES_TEST_DATA: EmbeddedMigrations = embed_migrations!("test_data/salaries");
 
     impl CrudTests for SalaryDTO {}
 
     #[test]
     fn crud_operations_on_salary() {
-        let conn = &initialize();
-        embedded_migrations::run_with_output(conn, &mut stdout()).unwrap();
+        let conn = &mut initialize();
+        conn.run_pending_migrations(SALARIES_TEST_DATA)
+            .expect("Fail to insert salaries test data into DB");
         let mut salary = SalaryDTO {
             id: None,
             employee_id: Some(1),

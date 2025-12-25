@@ -5,8 +5,8 @@ use diesel::sqlite::SqliteConnection;
 use crate::models::{NewUser, User};
 use crate::schema::users::dsl::*;
 
-pub fn create_user(new_user: &NewUser, conn: &SqliteConnection) -> QueryResult<User> {
-    conn.transaction(|| {
+pub fn create_user(new_user: &NewUser, conn: &mut SqliteConnection) -> QueryResult<User> {
+    conn.transaction(|conn| {
         insert_into(users)
             .values(new_user)
             .execute(conn)
@@ -14,8 +14,8 @@ pub fn create_user(new_user: &NewUser, conn: &SqliteConnection) -> QueryResult<U
     })
 }
 
-pub fn update_user(user: &User, conn: &SqliteConnection) -> QueryResult<User> {
-    conn.transaction(|| {
+pub fn update_user(user: &User, conn: &mut SqliteConnection) -> QueryResult<User> {
+    conn.transaction(|conn| {
         diesel::update(users.filter(id.eq(user.id)))
             .set(user)
             .execute(conn)
@@ -23,15 +23,15 @@ pub fn update_user(user: &User, conn: &SqliteConnection) -> QueryResult<User> {
     })
 }
 
-pub fn delete_user(user: &User, conn: &SqliteConnection) -> QueryResult<usize> {
-    conn.transaction(|| diesel::delete(users.filter(id.eq(user.id))).execute(conn))
+pub fn delete_user(user: &User, conn: &mut SqliteConnection) -> QueryResult<usize> {
+    conn.transaction(|conn| diesel::delete(users.filter(id.eq(user.id))).execute(conn))
 }
 
-pub fn get_users(conn: &SqliteConnection) -> Vec<User> {
+pub fn get_users(conn: &mut SqliteConnection) -> Vec<User> {
     users.load::<User>(conn).expect("Load users failed")
 }
 
-pub fn get_user(id_to_find: i32, conn: &SqliteConnection) -> Option<User> {
+pub fn get_user(id_to_find: i32, conn: &mut SqliteConnection) -> Option<User> {
     users
         .filter(id.eq(id_to_find))
         .first(conn)
@@ -42,7 +42,7 @@ pub fn get_user(id_to_find: i32, conn: &SqliteConnection) -> Option<User> {
 pub fn validate_user(
     username_p: &String,
     password_p: &String,
-    conn: &SqliteConnection,
+    conn: &mut SqliteConnection,
 ) -> Option<User> {
     info!(
         "Validate user '{}' with password '{}'",
@@ -67,7 +67,7 @@ mod tests {
 
     #[test]
     fn crud_operations_on_user() {
-        let conn = &initialize();
+        let conn = &mut initialize();
 
         let initially_user_count = user_count(conn);
 
@@ -130,7 +130,7 @@ mod tests {
 
     #[test]
     fn check_get_users() {
-        let conn = &initialize();
+        let conn = &mut initialize();
 
         let initially_user_count = user_count(conn);
         let all_users = get_users(conn);
@@ -139,7 +139,7 @@ mod tests {
 
     #[test]
     fn check_validate_user() {
-        let conn = &initialize();
+        let conn = &mut initialize();
 
         assert!(validate_user(
             &"admin".to_string(),
@@ -158,7 +158,7 @@ mod tests {
 
     #[test]
     fn should_prevent_creating_users_with_the_same_username() {
-        let conn = &initialize();
+        let conn = &mut initialize();
 
         // Insert new_user
         let new_user = NewUser {
@@ -180,7 +180,7 @@ mod tests {
 
     #[test]
     fn check_get_user() {
-        let conn = &initialize();
+        let conn = &mut initialize();
 
         let user_in_db = get_user(2, conn).unwrap();
         assert_eq!("admin", user_in_db.username);
@@ -189,7 +189,7 @@ mod tests {
 
     #[test]
     fn check_update_user() {
-        let conn = &initialize();
+        let conn = &mut initialize();
 
         let mut admin_in_db = get_user(2, conn).unwrap();
         admin_in_db.password = "new_password".to_string();
@@ -206,7 +206,7 @@ mod tests {
 
     #[test]
     fn create_user_should_return_created_user() {
-        let conn = &initialize();
+        let conn = &mut initialize();
 
         let new_user = NewUser {
             username: "new_username".to_string(),
@@ -222,7 +222,7 @@ mod tests {
 
     #[test]
     fn check_delete_user() {
-        let conn = &initialize();
+        let conn = &mut initialize();
 
         let admin_in_db = get_user(2, conn).unwrap();
         let deleted_rows = delete_user(&admin_in_db, conn);

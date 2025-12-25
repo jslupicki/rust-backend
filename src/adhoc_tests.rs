@@ -1,10 +1,9 @@
-use actix_http::http::Method;
 use actix_web::{test, App};
-
+use actix_web::http::Method;
 use crate::commons_for_tests;
 use crate::main_tests::login_as_admin;
 
-#[actix_rt::test]
+#[test]
 async fn check_login_guard() {
     setup_test!("check_login_guard");
 
@@ -25,7 +24,7 @@ async fn check_login_guard() {
 }
 
 #[test]
-fn check_lg() {
+async fn check_lg() {
     enum LG {
         Logged,
         LoggedAsAdmin(&'static [Method]),
@@ -80,7 +79,7 @@ fn check_lg() {
 }
 
 #[test]
-fn enum_test() {
+async fn enum_test() {
     enum LG {
         Logged,
         LoggedAsAdmin(&'static [Method]),

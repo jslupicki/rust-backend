@@ -4,14 +4,14 @@ use std::pin::Pin;
 use std::sync::Mutex;
 use std::task::{Context, Poll};
 
-use actix_http::http::Method;
-use actix_http::Response;
+use actix_http::StatusCode;
 use actix_service::{Service, Transform};
 use actix_web::cookie::Cookie;
 use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::error::ErrorUnauthorized;
 use actix_web::web::Json;
-use actix_web::{web, Error, HttpMessage, HttpRequest, HttpResponse};
+use actix_web::{web, Error, HttpRequest, HttpResponse};
+use actix_web::http::Method;
 use futures::future::{ok, Ready};
 use uuid::Uuid;
 
@@ -30,12 +30,11 @@ pub enum LoggedGuard {
     LoggedAsAdminWithException(&'static [Method], &'static [Method]),
 }
 
-impl<S> Transform<S> for LoggedGuard
+impl<S> Transform<S, ServiceRequest> for LoggedGuard
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse, Error = Error>,
+    S: Service<ServiceRequest, Response = ServiceResponse, Error = Error>,
     S::Future: 'static,
 {
-    type Request = ServiceRequest;
     type Response = ServiceResponse;
     type Error = Error;
     type Transform = LoggedGuardMiddleware<S>;
@@ -74,21 +73,20 @@ pub struct LoggedGuardMiddleware<S> {
     except: &'static [Method],
 }
 
-impl<S> Service for LoggedGuardMiddleware<S>
+impl<S> Service<ServiceRequest> for LoggedGuardMiddleware<S>
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse, Error = Error>,
+    S: Service<ServiceRequest, Response = ServiceResponse, Error = Error>,
     S::Future: 'static,
 {
-    type Request = ServiceRequest;
     type Response = ServiceResponse;
     type Error = Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
-    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+    fn poll_ready(&self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
     }
 
-    fn call(&mut self, req: ServiceRequest) -> Self::Future {
+    fn call(&self, req: ServiceRequest) -> Self::Future {
         if is_logged(&req, self.as_admin, self.except) {
             let fut = self.service.call(req);
             Box::pin(async move {
@@ -99,7 +97,7 @@ where
             Box::pin(async move {
                 Ok(ServiceResponse::new(
                     req.into_parts().0,
-                    Response::Unauthorized().finish(),
+                    HttpResponse::new(StatusCode::UNAUTHORIZED),
                 ))
             })
         }
@@ -170,7 +168,7 @@ async fn login(body: Json<LoginDTO>) -> Result<HttpResponse, Error> {
         );
     }
     if let Some(user) = dao::validate_user(&body.username, &body.password) {
-        let session_value = Uuid::new_v4().to_hyphenated().to_string();
+        let session_value = Uuid::new_v4().as_hyphenated().to_string();
         let session_cookie = Cookie::new("session", session_value.to_owned());
         let mut response = HttpResponse::Ok().content_type("text/plain").body(format!(
             "Login '{}' with password '{}' - session '{}'",

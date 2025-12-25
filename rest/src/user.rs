@@ -1,8 +1,7 @@
-use actix_http::http::Method;
 use actix_web::error::{ErrorImATeapot, ErrorInternalServerError, ErrorNotFound};
 use actix_web::web::Json;
 use actix_web::{web, Error, HttpResponse};
-
+use actix_web::http::Method;
 use dao::{NewUser, User};
 
 use crate::session::LoggedGuard::{Logged, LoggedAsAdmin};

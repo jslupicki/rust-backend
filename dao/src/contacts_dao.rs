@@ -87,15 +87,15 @@ impl Crud for ContactDTO {
         self.id = persisted.id;
     }
 
-    fn get_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<ContactDTO> {
+    fn get_simple(id_to_find: i32, conn: &mut SqliteConnection) -> QueryResult<ContactDTO> {
         contacts
             .filter(contact_id.eq(id_to_find))
             .first(conn)
             .map(|c: Contact| ContactDTO::from(c))
     }
 
-    fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<ContactDTO> {
-        fn insert(c: &ContactDTO, conn: &SqliteConnection) -> QueryResult<ContactDTO> {
+    fn save_simple(&self, conn: &mut SqliteConnection) -> QueryResult<ContactDTO> {
+        fn insert(c: &ContactDTO, conn: &mut SqliteConnection) -> QueryResult<ContactDTO> {
             insert_into(contacts)
                 .values(NewContact::from(c))
                 .execute(conn)
@@ -124,48 +124,48 @@ impl Crud for ContactDTO {
         }
     }
 
-    fn delete_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<usize> {
+    fn delete_simple(id_to_find: i32, conn: &mut SqliteConnection) -> QueryResult<usize> {
         diesel::delete(contacts.filter(contact_id.eq(id_to_find))).execute(conn)
     }
 }
 
 impl Searchable for ContactDTO {
-    fn get_all_with_connection(conn: &SqliteConnection) -> Vec<Self> {
+    fn get_all_with_connection(conn: &mut SqliteConnection) -> Vec<Self> {
         todo!()
     }
 
-    fn search_with_connection(s: &str, conn: &SqliteConnection) -> Vec<Self> {
+    fn search_with_connection(s: &str, conn: &mut SqliteConnection) -> Vec<Self> {
         todo!()
     }
 }
 
 impl SearchableByParent for ContactDTO {
-    fn search_by_parent_id_with_connection(parent_id: i32, conn: &SqliteConnection) -> Vec<Self> {
+    fn search_by_parent_id_with_connection(parent_id: i32, conn: &mut SqliteConnection) -> Vec<Self> {
         todo!()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::io::stdout;
+    use diesel_migrations::{EmbeddedMigrations, MigrationHarness};
 
     use crate::common_for_tests::*;
 
     use super::*;
 
-    embed_migrations!("test_data/contacts");
+    const MIGRATIONS: EmbeddedMigrations = embed_migrations!("test_data/contacts");
 
     impl CrudTests for ContactDTO {}
 
     #[test]
     fn crud_operations_on_contacts() {
-        let conn = &initialize();
-        embedded_migrations::run_with_output(conn, &mut stdout()).unwrap();
+        let conn = &mut initialize();
+        conn.run_pending_migrations(MIGRATIONS);
         let mut contact = ContactDTO {
             id: None,
             employee_id: Some(1),
-            from_date: NaiveDate::from_ymd(2015, 3, 14),
-            to_date: NaiveDate::from_ymd(2020, 5, 23),
+            from_date: NaiveDate::from_ymd_opt(2015, 3, 14).unwrap(),
+            to_date: NaiveDate::from_ymd_opt(2020, 5, 23).unwrap(),
             phone: "123456".to_string(),
             address: Some("Some contact address".to_string()),
             search_string: "some search for contact".to_string(),

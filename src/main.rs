@@ -33,6 +33,6 @@ pub async fn main() -> std::io::Result<()> {
     log4rs::init_file("log4rs.yml", Default::default()).unwrap();
     info!("Start application");
 
-    dao::initialize_db().unwrap();
+    dao::initialize_db();
     rest::start().await
 }

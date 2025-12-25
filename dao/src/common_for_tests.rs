@@ -5,7 +5,7 @@ use std::io::stdout;
 use diesel::dsl::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
-
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness};
 use crate::base_dao::{Crud, HaveId};
 use crate::schema::employees::dsl::id as employee_id;
 use crate::schema::employees::dsl::*;
@@ -14,16 +14,16 @@ use crate::schema::users::dsl::*;
 
 static TEST_DB_NAME: &str = ":memory:";
 
-embed_migrations!("../migrations");
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("../migrations");
 
 pub fn initialize_log() {
     let _ = log4rs::init_file("log4rs.yml", Default::default());
 }
 
 pub fn initialize_db() -> SqliteConnection {
-    let conn = SqliteConnection::establish(TEST_DB_NAME)
+    let mut conn = SqliteConnection::establish(TEST_DB_NAME)
         .expect(&format!("Error connecting to {}", TEST_DB_NAME));
-    embedded_migrations::run_with_output(&conn, &mut stdout()).unwrap();
+    conn.run_pending_migrations(MIGRATIONS);
     conn
 }
 
@@ -32,30 +32,30 @@ pub fn initialize() -> SqliteConnection {
     initialize_db()
 }
 
-pub fn user_count(conn: &SqliteConnection) -> i64 {
+pub fn user_count(conn: &mut SqliteConnection) -> i64 {
     users.select(count(user_id)).first(conn).unwrap()
 }
 
-pub fn employee_count(conn: &SqliteConnection) -> i64 {
+pub fn employee_count(conn: &mut SqliteConnection) -> i64 {
     employees.select(count(employee_id)).first(conn).unwrap()
 }
 
-pub fn assert_user_count(expected: i64, conn: &SqliteConnection) {
+pub fn assert_user_count(expected: i64, conn: &mut SqliteConnection) {
     let user_count = user_count(conn);
     assert_eq!(user_count, expected);
 }
 
 #[allow(dead_code)]
-pub fn assert_employee_count(expected: i64, conn: &SqliteConnection) {
+pub fn assert_employee_count(expected: i64, conn: &mut SqliteConnection) {
     let employee_count = employee_count(conn);
     assert_eq!(employee_count, expected);
 }
 
 pub struct Assertions<T> {
-    pub saved: Option<fn(&T, &SqliteConnection)>,
-    pub get: Option<fn(&T, &SqliteConnection)>,
-    pub persisted: Option<fn(&T, &SqliteConnection)>,
-    pub deleted: Option<fn(&T, &SqliteConnection)>,
+    pub saved: Option<fn(&T, &mut SqliteConnection)>,
+    pub get: Option<fn(&T, &mut SqliteConnection)>,
+    pub persisted: Option<fn(&T, &mut SqliteConnection)>,
+    pub deleted: Option<fn(&T, &mut SqliteConnection)>,
 }
 
 impl<T> Assertions<T> {
@@ -68,22 +68,22 @@ impl<T> Assertions<T> {
         }
     }
     #[allow(dead_code)]
-    pub fn with_saved(mut self, f: fn(&T, &SqliteConnection)) -> Self {
+    pub fn with_saved(mut self, f: fn(&T, &mut SqliteConnection)) -> Self {
         self.saved = Some(f);
         self
     }
     #[allow(dead_code)]
-    pub fn with_get(mut self, f: fn(&T, &SqliteConnection)) -> Self {
+    pub fn with_get(mut self, f: fn(&T, &mut SqliteConnection)) -> Self {
         self.get = Some(f);
         self
     }
     #[allow(dead_code)]
-    pub fn with_persisted(mut self, f: fn(&T, &SqliteConnection)) -> Self {
+    pub fn with_persisted(mut self, f: fn(&T, &mut SqliteConnection)) -> Self {
         self.persisted = Some(f);
         self
     }
     #[allow(dead_code)]
-    pub fn with_deleted(mut self, f: fn(&T, &SqliteConnection)) -> Self {
+    pub fn with_deleted(mut self, f: fn(&T, &mut SqliteConnection)) -> Self {
         self.deleted = Some(f);
         self
     }
@@ -93,11 +93,11 @@ pub trait CrudTests
 where
     Self: Crud + HaveId + Debug,
 {
-    fn test(&mut self, conn: &SqliteConnection) {
+    fn test(&mut self, conn: &mut SqliteConnection) {
         Self::test_with_assertion(self, Assertions::new(), conn);
     }
 
-    fn test_with_assertion(&mut self, assertions: Assertions<Self>, conn: &SqliteConnection) {
+    fn test_with_assertion(&mut self, assertions: Assertions<Self>, conn: &mut SqliteConnection) {
         info!("About to test {:#?}", &self);
         // Save
         let saved = self.save_in_transaction(conn);

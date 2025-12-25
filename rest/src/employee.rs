@@ -1,8 +1,7 @@
-use actix_http::error::{ErrorInternalServerError, ErrorNotFound};
-use actix_http::http::Method;
 use actix_web::web::Json;
 use actix_web::{web, Error, HttpResponse};
-
+use actix_web::error::{ErrorInternalServerError, ErrorNotFound};
+use actix_web::http::Method;
 use dao::{Crud, EmployeeDTO, Searchable};
 
 use crate::session::LoggedGuard::{Logged, LoggedAsAdmin};

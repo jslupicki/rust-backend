@@ -11,7 +11,6 @@ extern crate log;
 extern crate log4rs;
 extern crate monitor;
 extern crate r2d2;
-extern crate r2d2_diesel;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -20,7 +19,7 @@ extern crate sha3;
 use diesel::QueryResult;
 
 pub use base_dao::{Crud, Searchable, SearchableByParent};
-pub use connection::{get_connection, initialize_db};
+pub use connection::{get_connection, initialize_db, MIGRATIONS};
 pub use employees_dao::EmployeeDTO;
 pub use models::*;
 
@@ -36,31 +35,31 @@ mod schema;
 mod users_dao;
 
 pub fn create_user(new_user: &NewUser) -> QueryResult<User> {
-    let conn = get_connection();
-    users_dao::create_user(new_user, &conn)
+    let mut conn = get_connection();
+    users_dao::create_user(new_user, &mut conn)
 }
 
 pub fn update_user(user: &User) -> QueryResult<User> {
-    let conn = get_connection();
-    users_dao::update_user(user, &conn)
+    let mut conn = get_connection();
+    users_dao::update_user(user, &mut conn)
 }
 
 pub fn delete_user(user: &User) -> QueryResult<usize> {
-    let conn = get_connection();
-    users_dao::delete_user(user, &conn)
+    let mut conn = get_connection();
+    users_dao::delete_user(user, &mut conn)
 }
 
 pub fn get_users() -> Vec<User> {
-    let conn = get_connection();
-    users_dao::get_users(&conn)
+    let mut conn = get_connection();
+    users_dao::get_users(&mut conn)
 }
 
 pub fn get_user(id: i32) -> Option<User> {
-    let conn = get_connection();
-    users_dao::get_user(id, &conn)
+    let mut conn = get_connection();
+    users_dao::get_user(id, &mut conn)
 }
 
 pub fn validate_user(username: &String, password: &String) -> Option<User> {
-    let conn = get_connection();
-    users_dao::validate_user(username, password, &conn)
+    let mut conn = get_connection();
+    users_dao::validate_user(username, password, &mut conn)
 }

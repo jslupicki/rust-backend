@@ -61,7 +61,7 @@ impl HaveId for EmployeeDTO {
     }
 }
 
-fn delete_associations(e_id: i32, conn: &SqliteConnection) -> QueryResult<usize> {
+fn delete_associations(e_id: i32, conn: &mut SqliteConnection) -> QueryResult<usize> {
     use crate::schema::contacts::columns::employee_id as contacts_employee_id;
     use crate::schema::salaries::columns::employee_id as salaries_employee_id;
 
@@ -80,17 +80,18 @@ impl Crud for EmployeeDTO {
         self.contacts = persisted.contacts.clone();
     }
 
-    fn get_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<Self> {
+    fn get_simple(id_to_find: i32, conn: &mut SqliteConnection) -> QueryResult<Self> {
         employees
             .filter(employee_id.eq(id_to_find))
             .first(conn)
             .map(|e: Employee| into_dto_with_associations(e, conn))
     }
 
-    fn save_simple(&self, conn: &SqliteConnection) -> QueryResult<Self> {
+    fn save_simple(&self, conn: &mut SqliteConnection) -> QueryResult<Self> {
         let employee_to_dto_with_associations = |e: Employee,
                                                  salaries_to_save: &Vec<SalaryDTO>,
-                                                 contacts_to_save: &Vec<ContactDTO>|
+                                                 contacts_to_save: &Vec<ContactDTO>,
+                                                 conn: &mut SqliteConnection|
          -> EmployeeDTO {
             let e_id = e.id;
             let mut e_dto = EmployeeDTO::from(e);
@@ -106,19 +107,20 @@ impl Crud for EmployeeDTO {
             }
             e_dto
         };
-        let insert = |e_dto: &EmployeeDTO| -> QueryResult<EmployeeDTO> {
-            insert_into(employees)
-                .values(NewEmployee::from(e_dto))
-                .execute(conn)
-                .and_then(|_| {
-                    employees
-                        .order(employee_id.desc())
-                        .first(conn)
-                        .map(|e: Employee| {
-                            employee_to_dto_with_associations(e, &self.salaries, &self.contacts)
-                        })
-                })
-        };
+        let insert =
+            |e_dto: &EmployeeDTO, conn: &mut SqliteConnection| -> QueryResult<EmployeeDTO> {
+                insert_into(employees)
+                    .values(NewEmployee::from(e_dto))
+                    .execute(conn)
+                    .and_then(|_| {
+                        employees
+                            .order(employee_id.desc())
+                            .first(conn)
+                            .map(|e: Employee| {
+                                employee_to_dto_with_associations(e, &self.salaries, &self.contacts, conn)
+                            })
+                    })
+            };
 
         if self.id.is_some() {
             let self_id = self.id.unwrap();
@@ -127,23 +129,23 @@ impl Crud for EmployeeDTO {
                 .execute(conn)
                 .and_then(|updated| {
                     if updated == 0 {
-                        insert(self)
+                        insert(self, conn)
                     } else {
                         employees
                             .filter(employee_id.eq(self_id))
                             .first(conn)
                             .map(|e: Employee| {
                                 let _ = delete_associations(e.id, conn);
-                                employee_to_dto_with_associations(e, &self.salaries, &self.contacts)
+                                employee_to_dto_with_associations(e, &self.salaries, &self.contacts, conn)
                             })
                     }
                 })
         } else {
-            insert(self)
+            insert(self, conn)
         }
     }
 
-    fn delete_simple(id_to_find: i32, conn: &SqliteConnection) -> QueryResult<usize> {
+    fn delete_simple(id_to_find: i32, conn: &mut SqliteConnection) -> QueryResult<usize> {
         let _ = delete_associations(id_to_find, conn);
         diesel::delete(employees)
             .filter(employee_id.eq(id_to_find))
@@ -152,7 +154,7 @@ impl Crud for EmployeeDTO {
 }
 
 impl Searchable for EmployeeDTO {
-    fn get_all_with_connection(conn: &SqliteConnection) -> Vec<Self> {
+    fn get_all_with_connection(conn: &mut SqliteConnection) -> Vec<Self> {
         employees
             .load::<Employee>(conn)
             .expect("Load employees failed")
@@ -161,7 +163,7 @@ impl Searchable for EmployeeDTO {
             .collect()
     }
 
-    fn search_with_connection(s: &str, conn: &SqliteConnection) -> Vec<Self> {
+    fn search_with_connection(s: &str, conn: &mut SqliteConnection) -> Vec<Self> {
         use crate::schema::employees::columns::search_string;
 
         employees
@@ -174,7 +176,7 @@ impl Searchable for EmployeeDTO {
     }
 }
 
-fn into_dto_with_associations(e: Employee, conn: &SqliteConnection) -> EmployeeDTO {
+fn into_dto_with_associations(e: Employee, conn: &mut SqliteConnection) -> EmployeeDTO {
     let sv: Vec<Salary> = Salary::belonging_to(&e).load(conn).unwrap();
     let cv: Vec<Contact> = Contact::belonging_to(&e).load(conn).unwrap();
     let mut e_dto = EmployeeDTO::from(e);
@@ -199,7 +201,7 @@ mod tests {
 
     #[test]
     fn crud_operations_on_employee() {
-        let conn = &initialize();
+        let conn = &mut initialize();
         let mut employee = EmployeeDTO {
             id: None,
             first_name: "Bartlomiej".to_string(),
@@ -209,16 +211,16 @@ mod tests {
                 SalaryDTO {
                     id: None,
                     employee_id: None,
-                    from_date: NaiveDate::from_ymd(2015, 3, 14),
-                    to_date: NaiveDate::from_ymd(2015, 3, 15),
+                    from_date: NaiveDate::from_ymd_opt(2015, 3, 14).unwrap(),
+                    to_date: NaiveDate::from_ymd_opt(2015, 3, 15).unwrap(),
                     amount: 1,
                     search_string: "".to_string(),
                 },
                 SalaryDTO {
                     id: None,
                     employee_id: None,
-                    from_date: NaiveDate::from_ymd(2015, 3, 16),
-                    to_date: NaiveDate::from_ymd(2015, 3, 17),
+                    from_date: NaiveDate::from_ymd_opt(2015, 3, 16).unwrap(),
+                    to_date: NaiveDate::from_ymd_opt(2015, 3, 17).unwrap(),
                     amount: 2,
                     search_string: "".to_string(),
                 },
@@ -227,8 +229,8 @@ mod tests {
                 ContactDTO {
                     id: None,
                     employee_id: None,
-                    from_date: NaiveDate::from_ymd(2015, 3, 14),
-                    to_date: NaiveDate::from_ymd(2015, 3, 15),
+                    from_date: NaiveDate::from_ymd_opt(2015, 3, 14).unwrap(),
+                    to_date: NaiveDate::from_ymd_opt(2015, 3, 15).unwrap(),
                     phone: "123456".to_string(),
                     address: Some("Address 1".to_string()),
                     search_string: "".to_string(),
@@ -236,15 +238,15 @@ mod tests {
                 ContactDTO {
                     id: None,
                     employee_id: None,
-                    from_date: NaiveDate::from_ymd(2015, 3, 16),
-                    to_date: NaiveDate::from_ymd(2015, 3, 17),
+                    from_date: NaiveDate::from_ymd_opt(2015, 3, 16).unwrap(),
+                    to_date: NaiveDate::from_ymd_opt(2015, 3, 17).unwrap(),
                     phone: "234567".to_string(),
                     address: Some("Address 2".to_string()),
                     search_string: "".to_string(),
                 },
             ],
         };
-        let common_assertions = |e: &EmployeeDTO, _conn: &SqliteConnection| {
+        let common_assertions = |e: &EmployeeDTO, _conn: &mut SqliteConnection| {
             assert_eq!(e.salaries.len(), 2);
             assert_eq!(e.contacts.len(), 2);
             for s in &e.salaries {

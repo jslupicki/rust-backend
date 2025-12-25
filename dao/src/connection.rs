@@ -1,17 +1,16 @@
 use std::env;
-use std::io::stdout;
 
+use diesel::r2d2::ConnectionManager;
+use diesel::r2d2::Pool;
 use diesel::sqlite::SqliteConnection;
-use diesel_migrations::RunMigrationsError;
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness};
 use dotenv::dotenv;
-use r2d2::Pool;
-use r2d2_diesel::ConnectionManager;
+
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("../migrations");
 
 lazy_static! {
     static ref POOL: Pool<ConnectionManager<SqliteConnection>> = create_connection_pool();
 }
-
-embed_migrations!("../migrations");
 
 fn create_connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
     dotenv().ok();
@@ -23,7 +22,10 @@ fn create_connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
         Ok(pool_size) => pool_size.parse::<u32>().unwrap(),
         Err(_) => 1,
     };
-    info!("Initialize connection pool with DATABASE_URL='{}', POOL_SIZE='{}'", database_url, pool_size);
+    info!(
+        "Initialize connection pool with DATABASE_URL='{}', POOL_SIZE='{}'",
+        database_url, pool_size
+    );
     let manager = ConnectionManager::<SqliteConnection>::new(database_url);
     Pool::builder()
         .max_size(pool_size)
@@ -31,10 +33,10 @@ fn create_connection_pool() -> Pool<ConnectionManager<SqliteConnection>> {
         .expect("Failed to create pool.")
 }
 
-pub fn initialize_db() -> Result<(), RunMigrationsError> {
-    let conn: &SqliteConnection = &get_connection();
+pub fn initialize_db() {
+    let mut conn = get_connection();
     info!("Initialize DB (if not exist), run migrations");
-    embedded_migrations::run_with_output(conn, &mut stdout())
+    conn.run_pending_migrations(MIGRATIONS).expect("Fail to initiate DB");
 }
 
 pub fn get_connection() -> r2d2::PooledConnection<ConnectionManager<SqliteConnection>> {

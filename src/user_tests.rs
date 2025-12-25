@@ -1,6 +1,5 @@
-use actix_http::http::StatusCode;
 use actix_web::{test, App};
-
+use actix_web::http::StatusCode;
 use rest::UserDTO;
 
 use crate::commons_for_tests;
@@ -20,7 +19,7 @@ async fn get_all_users() {
             .uri("/users")
             .cookie(session.clone())
             .to_request();
-        let users: Vec<UserDTO> = test::read_response_json(&mut app, req).await;
+        let users: Vec<UserDTO> = test::call_and_read_body_json(&mut app, req).await;
         assert_eq!(users.len(), 2);
     }
 }
@@ -39,7 +38,7 @@ async fn get_specific_user() {
             .uri("/users/1")
             .cookie(session.clone())
             .to_request();
-        let user: UserDTO = test::read_response_json(&mut app, req).await;
+        let user: UserDTO = test::call_and_read_body_json(&mut app, req).await;
         assert!(user.id.is_some());
         assert_eq!(user.id.unwrap(), 1);
         assert_eq!(user.username.unwrap(), String::from("user"));
@@ -48,7 +47,7 @@ async fn get_specific_user() {
             .uri("/users/2")
             .cookie(session.clone())
             .to_request();
-        let user: UserDTO = test::read_response_json(&mut app, req).await;
+        let user: UserDTO = test::call_and_read_body_json(&mut app, req).await;
         assert!(user.id.is_some());
         assert_eq!(user.id.unwrap(), 2);
         assert_eq!(user.username.unwrap(), String::from("admin"));
@@ -85,7 +84,7 @@ async fn update_user() {
             .uri("/users/1")
             .cookie(session.clone())
             .to_request();
-        let user: UserDTO = test::read_response_json(&mut app, req).await;
+        let user: UserDTO = test::call_and_read_body_json(&mut app, req).await;
 
         assert!(user.id.is_some());
         assert_eq!(user.id.unwrap(), 1);
@@ -112,7 +111,7 @@ async fn update_user() {
             .uri("/users/1")
             .cookie(session.clone())
             .to_request();
-        let user: UserDTO = test::read_response_json(&mut app, req).await;
+        let user: UserDTO = test::call_and_read_body_json(&mut app, req).await;
 
         assert!(user.id.is_some());
         assert_eq!(user.id.unwrap(), 1);
